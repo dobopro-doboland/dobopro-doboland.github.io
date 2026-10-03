@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#2f6b2a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="パイナップル">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>パイナップル</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+  :root { --ink:#1f2937; --muted:#6b7280; --line:#d1d5db; --brand:#1f3a5f; --ok:#15803d; --warn:#b45309; --ng:#b91c1c; --bg:#f8fafc; }
+  * { box-sizing:border-box; }
+  body { font-family:"Hiragino Sans","Noto Sans JP",sans-serif; color:var(--ink); margin:0; padding:12px; background:#fff; font-size:14px; }
+  h2 { font-size:15px; margin:14px 0 6px; color:var(--brand); }
+  label { display:block; font-size:12px; color:var(--muted); margin-bottom:3px; }
+  input, select, textarea { width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; font-size:14px; font-family:inherit; }
+  textarea { resize:vertical; min-height:54px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .card { border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:10px; background:var(--bg); position:relative; }
+  .card .row { display:grid; grid-template-columns:110px 1fr; gap:8px; margin-bottom:6px; }
+  .del { position:absolute; top:6px; right:8px; border:none; background:none; color:var(--ng); cursor:pointer; font-size:13px; }
+  .btn { padding:9px 16px; border-radius:6px; border:1px solid var(--brand); background:var(--brand); color:#fff; cursor:pointer; font-size:14px; }
+  .btn.sub { background:#fff; color:var(--brand); }
+  .btn:disabled { opacity:.5; cursor:default; }
+  .bar { display:flex; justify-content:space-between; align-items:center; margin-top:10px; gap:8px; flex-wrap:wrap; }
+  .total { font-weight:bold; }
+  .hint { font-size:12px; color:var(--muted); }
+  .msg { margin-top:10px; padding:10px; border-radius:6px; font-size:13px; white-space:pre-wrap; }
+  .msg.ok { background:#dcfce7; } .msg.ng { background:#fee2e2; } .msg.warn { background:#fef3c7; }
+  .chips button { border:1px solid var(--line); background:#fff; border-radius:12px; padding:2px 8px; margin:2px 2px 0 0; cursor:pointer; font-size:12px; }
+  @media (max-width:560px){ .grid2 { grid-template-columns:1fr; } .card .row { grid-template-columns:1fr; } }
+</style>
+
+<style>
+  /* パイナップル：スマホで押しやすく */
+  html:root { --brand:#2f6b2a; --accent:#f5b700; }
+  body { padding:0 12px calc(16px + env(safe-area-inset-bottom)); font-size:15px; background:#fff; }
+  input, select, textarea { font-size:16px; padding:10px; }
+  .btn { padding:12px 18px; font-size:16px; border-radius:10px; }
+  .appbar { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:calc(10px + env(safe-area-inset-top)) 0 8px; }
+  .appbar .ttl { font-size:18px; font-weight:bold; color:var(--brand); }
+  .appbar .me { font-size:13px; color:var(--muted); text-align:right; }
+  .appbar .me button { border:none; background:none; color:var(--muted); text-decoration:underline; font-size:12px; padding:0; cursor:pointer; }
+  .tabs { flex-wrap:nowrap !important; overflow-x:auto; -webkit-overflow-scrolling:touch; position:sticky; top:0; background:#fff; z-index:5; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tabs button { white-space:nowrap; flex:0 0 auto; padding:10px 12px !important; }
+  #login { position:fixed; inset:0; background:linear-gradient(#fffbea, #fff); z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; }
+  #login img { width:96px; height:96px; border-radius:22px; box-shadow:0 4px 14px rgba(0,0,0,.12); }
+  #login h1 { font-size:24px; margin:14px 0 4px; color:var(--brand); }
+  #login p { color:var(--muted); font-size:13px; margin:0 0 18px; }
+  #login input { max-width:220px; text-align:center; font-size:24px; letter-spacing:6px; }
+  #login .btn { margin-top:12px; width:220px; }
+</style>
+
+<style>
+  .tabs { display:flex; gap:4px; border-bottom:2px solid var(--brand); margin-bottom:12px; flex-wrap:wrap; }
+  .tabs button { border:1px solid var(--line); border-bottom:none; background:#f1f5f9; padding:8px 14px; border-radius:6px 6px 0 0; cursor:pointer; font-size:14px; }
+  .tabs button.on { background:var(--brand); color:#fff; border-color:var(--brand); }
+  .who { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .who strong { font-size:16px; }
+  .pane { display:none; } .pane.on { display:block; }
+  .edit-banner { background:#fef3c7; border:1px solid #f59e0b; padding:8px 10px; border-radius:6px; margin-bottom:10px; display:none; }
+  table.list { width:100%; border-collapse:collapse; font-size:13px; }
+  table.list th, table.list td { border-bottom:1px solid var(--line); padding:6px 4px; text-align:left; vertical-align:top; }
+  table.list th { background:#f1f5f9; position:sticky; top:0; }
+  table.list td.num { text-align:right; white-space:nowrap; }
+  .mini { padding:3px 8px; font-size:12px; border-radius:4px; border:1px solid var(--line); background:#fff; cursor:pointer; margin:1px; }
+  .mini.del { color:var(--ng); border-color:#fca5a5; position:static; }
+  .mini.del.sure { background:var(--ng); color:#fff; }
+  .badge { font-size:11px; padding:1px 6px; border-radius:8px; background:#e5e7eb; white-space:nowrap; }
+  .badge.要確認 { background:#fee2e2; } .badge.未確認 { background:#fef3c7; } .badge.領収書確認済, .badge.精算済 { background:#dcfce7; }
+  .filter { display:flex; gap:8px; align-items:center; margin:6px 0 10px; }
+  .filter select { width:auto; }
+</style></head>
+<body data-page="work" data-member="" data-lock="1">
+  <div id="login" style="display:none">
+    <img src="icon-192.png" alt="">
+    <h1>パイナップル</h1>
+    <p>DOBOLAND メンバー専用の申請アプリです。<br>管理者から届いた6けたのPINを入れてください。</p>
+    <form onsubmit="event.preventDefault(); pineLogin()">
+      <input id="pin" type="password" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="\d{6}" placeholder="••••••">
+      <br><button class="btn" id="loginBtn" type="submit">ログイン</button>
+    </form>
+    <div id="loginMsg" style="width:220px"></div>
+  </div>
+
+  <div class="who" style="display:none">
+    <label style="margin:0">メンバー</label>
+    <select id="member" style="width:auto" onchange="onMember()"></select>
+    <strong id="memberFixed" style="display:none"></strong>
+  </div>
+    <div class="appbar">
+    <span class="ttl">🍍 パイナップル</span>
+    <span class="me"><span id="meName"></span><br><button type="button" onclick="pineLogout()">ログアウト</button></span>
+  </div>
+
+  <div class="tabs">
+    <button data-p="work" onclick="go('work')">🕒 稼働時間</button>
+    <button data-p="genba" onclick="go('genba')">🚩 現地活動費</button>
+    <button data-p="sns" onclick="go('sns')">📱 SNS投稿</button>
+    <button data-p="group" onclick="go('group')" id="groupTab" style="display:none">👥 定例（リーダー）</button>
+    <button data-p="transport" onclick="go('transport')">🚃 交通費</button>
+    <button data-p="expense" onclick="go('expense')">💴 経費</button>
+    <button data-p="budgetreq" onclick="go('budgetreq')">📈 追加予算</button>
+    <button data-p="history" onclick="go('history')">✏️ 修正</button>
+  </div>
+
+  <!-- リーダーのまとめ申請 -->
+  <div class="pane" id="p-group">
+    <p class="hint">各定例は、その定例のリーダーが参加者全員の分をまとめて申請します。細かいMTGは「稼働時間」から各自で申請してください。</p>
+    <div class="grid2">
+      <div><label>定例</label><select id="grpCat" onchange="renderGroupMembers()"></select></div>
+      <div><label>日付</label><input type="date" id="grpDate"></div>
+    </div>
+    <div style="margin-top:10px"><label>内容（何を話し合ったか）</label><textarea id="grpContent" placeholder="例：10月の施工スケジュールを確認"></textarea></div>
+    <div class="grid2" style="margin-top:10px">
+      <div><label>議事録などのURL（必須）</label><input type="url" id="grpUrl" placeholder="https://..."></div>
+      <div><label>全員の時間（分）</label><div style="display:flex;gap:6px"><input type="number" id="grpMin" min="5" step="5" placeholder="例：60" style="flex:1"><button class="btn sub" type="button" onclick="grpApplyAll()">全員に入れる</button></div></div>
+    </div>
+    <h2>参加者とネクストアクション</h2>
+    <p class="hint">参加した人にチェックを入れ、時間を入れてください。<b>ネクストアクション（次にやること）</b>は書ける人だけでOKです。途中参加・途中退出の人は時間を変えます。</p>
+    <div id="grpMembers"></div>
+    <div class="bar"><span style="display:flex;gap:6px;flex-wrap:wrap"><select id="grpAddSel" style="width:auto"></select><button class="btn sub" type="button" onclick="grpAddMember()">＋ 参加者を追加</button></span><span class="total" id="grpTotal"></span></div>
+    <p class="hint">ほかの定例のメンバーや、ふだんは参加しない人が来たときは「＋ 参加者を追加」で足してください。</p>
+    <div class="bar"><span></span><button class="btn" id="grpSubmit" onclick="sendGroup()">まとめて申請</button></div>
+    <div id="grpMsg"></div>
+  </div>
+
+  <!-- 交通費 -->
+  <div class="pane" id="p-transport">
+    <div class="edit-banner" id="tEdit">✏️ 交通費を修正中です。<button class="mini" onclick="cancelTransEdit()">修正をやめる</button></div>
+    <p class="hint">交通費は「現地に来るため」の移動費です。車で来た場合はガソリン・ETCを選びます。<b>現地に着いてからのガソリン・ETC・レンタカーは「経費」で申請</b>してください。</p>
+    <div class="grid2">
+      <div><label>利用日</label><input type="date" id="tDate"></div>
+      <div><label>交通手段</label><select id="tMode"></select></div>
+      <div><label>区間（どこから → どこまで）</label><div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center"><input id="tFrom" placeholder="例：東京"><span>→</span><input id="tTo" placeholder="例：大原"></div></div>
+      <div><label>片道・往復</label><select id="tTrip"><option>片道</option><option>往復</option><option>その他</option></select></div>
+      <div><label>PJ・企画（どのPJの活動のためか）</label><select id="tPj"></select></div>
+      <div><label>合計金額（円・税込）</label><input type="number" id="tAmount" min="1" oninput="transSum()"></div>
+    </div>
+    <h2>内訳（だれの分がいくらか）</h2>
+    <p class="hint"><b>ほかのメンバーの分も一緒に払ったときは「＋ メンバーを追加」で、その人と金額を足してください。</b>自分だけの分なら追加は不要です。間違えて追加したら「削除」で消せます。全額あなた（支払った人）に給与と一緒に精算されます。内訳の合計は合計金額と同じにします。</p>
+    <div id="tSplit"></div>
+    <div class="bar"><button class="btn sub" type="button" onclick="addSplit()">＋ メンバーを追加</button><span class="total" id="tSplitSum"></span></div>
+    <div class="grid2" style="margin-top:10px">
+      <div><label>備考（任意）</label><input id="tNote"></div>
+      <div><label>領収書（画像・PDF・必須）<span id="tFileNote"></span></label><input type="file" id="tFile" accept="image/*,application/pdf"></div>
+    </div>
+    <div class="bar"><span class="hint">領収書は「交通費／あなたの名前」フォルダに自動で保存されます（レシートは不要）。</span><button class="btn" id="tSubmit" onclick="sendTransport()">交通費を申請</button></div>
+    <div id="tMsg"></div>
+  </div>
+
+  <!-- 追加予算 -->
+  <div class="pane" id="p-budgetreq">
+    <div class="edit-banner" id="bEdit">✏️ 追加予算の申請を修正中です。<button class="mini" onclick="cancelBudEdit()">修正をやめる</button></div>
+    <p class="hint">当初予算に入っていない費用や、予算を超えそうなときに申請します。管理者が承認すると「試作_予算まとめ」に加算されます。</p>
+    <div class="grid2">
+      <div><label>PJ・企画</label><select id="bPj"></select></div>
+      <div><label>小項目（何に使うか）</label><input id="bItem" placeholder="例：完成披露会の宿泊費（学生20名）"></div>
+      <div><label>使用予定月</label><select id="bMonth"></select></div>
+      <div><label>単価（円）</label><input type="number" id="bUnit" min="1" oninput="budSum()"></div>
+      <div><label>数量・回数</label><input type="number" id="bQty" min="1" value="1" oninput="budSum()"></div>
+      <div><label>区分</label><select id="bKind"><option>新規（当初予算にない）</option><option>増額（当初予算を超える）</option></select></div>
+    </div>
+    <div style="margin-top:10px"><label>目的・必要な理由</label><textarea id="bPurpose" placeholder="例：参加者が想定の15名から20名に増えたため"></textarea></div>
+    <div class="grid2" style="margin-top:10px">
+      <div><label>見積・資料のURL（任意）</label><input type="url" id="bLink" placeholder="https://..."></div>
+      <div><label>見積書などの添付（任意）</label><input type="file" id="bFile" accept="image/*,application/pdf"></div>
+    </div>
+    <div style="margin-top:10px"><label>備考（任意）</label><input id="bNote"></div>
+    <div class="bar"><span class="total" id="bTotal"></span><button class="btn" id="bSubmit" onclick="sendBudget()">追加予算を申請</button></div>
+    <div id="bMsg"></div>
+  </div>
+
+  <!-- 現地活動費 -->
+  <div class="pane" id="p-genba">
+    <div class="edit-banner" id="gEdit">✏️ 現地活動費を修正中です（1日分）。<button class="mini" onclick="cancelAllowEdit('genba')">修正をやめる</button></div>
+    <p class="hint"><span id="genbaPrice">現地で活動した日は1日3,000円です。</span>何日分でもまとめて申請できます。<b>1日ごとに、その日にしたことを書いてください。</b></p>
+    <div id="gDays"></div>
+    <div class="bar"><button class="btn sub" type="button" id="gAdd" onclick="addGenbaDay()">＋ 日を追加（次の日）</button><span class="total" id="gTotal"></span></div>
+    <div class="bar"><span></span><button class="btn" id="gSubmit" onclick="sendAllowance('genba')">現地活動費を申請</button></div>
+    <div id="gMsg"></div>
+  </div>
+
+  <!-- SNS投稿 -->
+  <div class="pane" id="p-sns">
+    <div class="edit-banner" id="sEdit">✏️ SNS投稿を修正中です。<button class="mini" onclick="cancelAllowEdit('sns')">修正をやめる</button></div>
+    <p class="hint" id="snsHint">投稿ごとに1枚入力してください。</p>
+    <div id="posts"></div>
+    <button class="btn sub" id="sAdd" onclick="addPost()">＋ 投稿を追加</button>
+    <div class="bar"><span class="total" id="sTotal"></span><button class="btn" id="sSubmit" onclick="sendAllowance('sns')">SNS投稿を申請</button></div>
+    <div id="sMsg"></div>
+  </div>
+
+  <!-- 稼働時間 -->
+  <div class="pane" id="p-work">
+    <div class="edit-banner" id="aEdit">✏️ 活動を修正中です。<button class="mini" onclick="cancelActEdit()">修正をやめる</button></div>
+    <div style="max-width:220px"><label>活動日</label><input type="date" id="aDate"></div>
+    <h2>活動（1活動＝1枚。何件でもOK。1日2行を超えると行が自動で増えます）</h2>
+    <div id="items"></div>
+    <button class="btn sub" id="addBtn" onclick="addItem()">＋ 活動を追加</button>
+    <div class="bar"><span class="total" id="total">合計 0分（0時間）</span><button class="btn" id="aSubmit" onclick="sendActivity()">給与タブへ反映</button></div>
+    <p class="hint">活動内容は「何のために・何を」したかを具体的に（例：9月説明会用の参加者向け説明資料を作成）。</p>
+    <div id="aMsg"></div>
+  </div>
+
+  <!-- 経費 -->
+  <div class="pane" id="p-expense">
+    <div class="edit-banner" id="eEdit">✏️ 経費を修正中です。<button class="mini" onclick="cancelExpEdit()">修正をやめる</button></div>
+    <div class="grid2">
+      <div><label>購入日（支出日）</label><input type="date" id="eDate"></div>
+      <div><label>金額（円・税込）</label><input type="number" id="amount" min="1"></div>
+      <div><label>PJ・企画</label><select id="pj" onchange="setBudgetOpts()"></select></div>
+      <div><label>予算元（予算の大項目）</label><select id="budget"></select><span class="hint" id="budgetNote"></span></div>
+    </div>
+    <div style="margin-top:10px"><label>内容（何のために何を買ったか）</label><textarea id="content" placeholder="例：いすみ模型用の竹加工材料"></textarea></div>
+    <div class="grid2" style="margin-top:10px">
+      <div><label>支払先・店舗</label><select id="store" onchange="onStore()"></select>
+        <input id="storeOther" placeholder="店名を入力（必須）" style="display:none;margin-top:4px"></div>
+      <div><label>精算方法（だれが払ったか）</label><select id="settle" onchange="onSettle()"></select>
+        <select id="staff" style="display:none;margin-top:4px"></select></div>
+      <div><label>領収書（画像またはPDF・必須）<span id="fileNote"></span></label><input type="file" id="file" accept="image/*,application/pdf"></div>
+      <div><label>レシート（画像またはPDF・必須）<span id="rcptNote"></span></label><input type="file" id="rcpt" accept="image/*,application/pdf">
+        <label style="margin-top:4px"><input type="checkbox" id="samePaper" style="width:auto" onchange="$('rcpt').disabled=this.checked"> 領収書とレシートは同じ紙</label></div>
+      <div><label>備考（任意）</label><input id="note"></div>
+    </div>
+    <div id="settleInfo" class="msg" style="display:none"></div>
+    <div id="perm" class="hint" style="margin-top:8px"></div>
+    <div class="bar"><span class="hint">領収書は「名前_日付_PJ企画_金額」に自動で名前が変わります。<b>あなたに振り込まれるのは「本人立替」のときだけ</b>です。</span><button class="btn" id="eSubmit" onclick="sendExpense()">経費台帳へ登録</button></div>
+    <div id="eMsg"></div>
+  </div>
+
+  <!-- 履歴 -->
+  <div class="pane" id="p-history">
+    <div class="filter">
+      <label style="margin:0">表示</label>
+      <select id="hKind" onchange="renderHistory()"><option value="activity">稼働時間</option><option value="genba">現地活動費</option><option value="sns">SNS投稿</option><option value="transport">交通費</option><option value="expense">経費</option><option value="budgetreq">追加予算</option></select>
+      <label style="margin:0">月</label>
+      <select id="hMonth" onchange="renderHistory()"><option value="">すべて</option></select>
+      <button class="mini" onclick="loadHistory()">再読み込み</button>
+    </div>
+    <div id="hMsg"></div>
+    <div id="hList" style="overflow-x:auto"></div>
+  </div>
+
+<script>
+/* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
+const PINE_API = 'https://script.google.com/macros/s/AKfycbwgDYCaeTYSSm5ozOPx-EK_5JuKouHXV1BlTihzQcA9dxEnI6AVZTv3668xHtgGQ9skCg/exec';
+const PINE_KEY = 'pineapple_auth';
+let PINE_AUTH = null, pineReady;
+const pineAuthed = new Promise(r => { pineReady = r; });
+
+function pineStart(auth) {
+  PINE_AUTH = auth;
+  document.body.dataset.member = auth.name;
+  document.getElementById('meName').textContent = auth.name;
+  document.getElementById('login').style.display = 'none';
+  pineReady();
+}
+function pineShowLogin() { document.getElementById('login').style.display = 'flex'; setTimeout(() => document.getElementById('pin').focus(), 50); }
+function pineLogout() {
+  try { localStorage.removeItem(PINE_KEY); localStorage.removeItem('pineapple_init'); } catch (e) { /* 保存できない端末 */ }
+  location.reload();
+}
+async function pinePost(body) {
+  const r = await fetch(PINE_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error('通信エラー（' + r.status + '）');
+  return r.json();
+}
+async function pineLogin() {
+  const pin = document.getElementById('pin').value.trim(), btn = document.getElementById('loginBtn');
+  const show = t => { document.getElementById('loginMsg').innerHTML = t ? '<div class="msg ng">' + t + '</div>' : ''; };
+  if (!/^\d{6}$/.test(pin)) return show('6けたの数字を入れてください');
+  btn.disabled = true; show('');
+  try {
+    const j = await pinePost({ action: 'login', pin });
+    if (!j.ok) throw new Error(j.error);
+    try { localStorage.setItem(PINE_KEY, JSON.stringify(j.data)); } catch (e) { /* 保存できなくても今回は使える */ }
+    pineStart(j.data);
+  } catch (e) { show(e.message === 'Failed to fetch' ? '通信できませんでした。電波のよい所でもう一度' : e.message); }
+  btn.disabled = false;
+}
+async function pineCall(fn, args) {
+  await pineAuthed;
+  let j;
+  try { j = await pinePost({ fn, args, token: PINE_AUTH.token }); }
+  catch (e) { throw new Error(e.message === 'Failed to fetch' ? '通信できませんでした。電波のよい所でもう一度送ってください' : e.message); }
+  if (!j.ok) {
+    if (j.relogin) { try { localStorage.removeItem(PINE_KEY); } catch (e) { /* なし */ } pineShowLogin(); }
+    throw new Error(j.error);
+  }
+  return j.data;
+}
+// 申請画面は google.script.run の書き方のまま動かす（中身は上の pineCall に置き換え）
+window.google = { script: { get run() {
+  let ok = () => {}, ng = () => {};
+  const p = new Proxy({}, { get(_, k) {
+    if (k === 'withSuccessHandler') return f => { ok = f; return p; };
+    if (k === 'withFailureHandler') return f => { ng = f; return p; };
+    return (...a) => { pineCall(k, a).then(ok, ng); };
+  } });
+  return p;
+} } };
+(function () {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(PINE_KEY) || 'null'); } catch (e) { saved = null; }
+  if (saved && saved.token && saved.name) pineStart(saved); else pineShowLogin();
+})();
+
+</script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const opts = (list, ph) => (ph ? `<option value="">${ph}</option>` : '') + list.map(v => `<option>${esc(v)}</option>`).join('');
+/** PJ名は頭に記号を付けて表示（中身の値は記号なし） */
+const pjL = p => ((INIT && INIT.pjEmoji) || {})[p] ? INIT.pjEmoji[p] + p : p;
+const pjOpts = (list, ph) => (ph ? `<option value="">${ph}</option>` : '') + list.map(v => `<option value="${esc(v)}">${esc(pjL(v))}</option>`).join('');
+const pad = n => String(n).padStart(2, '0');
+function ymd(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+const B = document.body.dataset;
+let INIT = null, HIST = null, actEdit = null, expEdit = null;
+
+// 追加予算以外の申請は「今月1日〜月末」の日付だけ
+function monthMin() { return today().slice(0, 7) + '-01'; }
+function monthMax() { const d = new Date(today() + 'T00:00'); return ymd(new Date(d.getFullYear(), d.getMonth() + 1, 0)); }
+function inMonth_(d) { return !!d && d >= monthMin() && d <= monthMax(); }
+const MONTH_NG = () => `今月（${Number(today().slice(5, 7))}月1日〜月末）の日付だけ申請できます`;
+function msg(id, cls, text) { $(id).innerHTML = text ? `<div class="msg ${cls}">${esc(text)}</div>` : ''; }
+function member() { return $('member').value; }
+
+// 起動を速くする：前回の初期データがあればすぐ画面を出し、最新は裏で受け取る（入力を始めていたら次回の起動から反映）
+const INIT_KEY = 'pineapple_init';
+let TOUCHED = false;
+document.addEventListener('input', () => { TOUCHED = true; }, true);
+let cachedInit = null;
+try { cachedInit = JSON.parse(localStorage.getItem(INIT_KEY) || 'null'); } catch (e) { cachedInit = null; }
+if (!cachedInit) msg('aMsg', 'warn', '読み込み中…');
+(typeof pineAuthed !== 'undefined' ? pineAuthed : Promise.resolve()).then(() => { if (cachedInit && !INIT) applyInit(cachedInit); });
+google.script.run.withSuccessHandler(init => {
+  try { localStorage.setItem(INIT_KEY, JSON.stringify(init)); } catch (e) { /* 保存できない端末 */ }
+  if (!INIT || (!TOUCHED && JSON.stringify(init) !== JSON.stringify(INIT))) applyInit(init);
+}).withFailureHandler(e => { if (!INIT) msg('aMsg', 'ng', '読み込みエラー：' + (e && e.message || e)); }).getFormInit();
+
+function applyInit(init) {
+  INIT = init; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
+  ['items', 'posts', 'gDays'].forEach(k => { $(k).innerHTML = ''; });
+  $('member').innerHTML = opts(init.members.map(m => m.name), '選択してください');
+  if (B.member) $('member').value = B.member;
+  if (B.lock) { $('member').style.display = 'none'; $('memberFixed').style.display = ''; $('memberFixed').textContent = B.member; }
+  ['aDate', 'eDate', 'tDate', 'grpDate'].forEach(k => { $(k).min = monthMin(); $(k).max = monthMax(); $(k).value = today(); });
+  $('genbaPrice').textContent = `現地で活動した日は1日${Number(init.genbaUnit || 3000).toLocaleString()}円です。`;
+  $('snsHint').textContent = 'SNS投稿は ' + (init.snsKinds || []).map(k => `${k.name} 1件${Number(k.unit).toLocaleString()}円`).join('・') + ' です。投稿ごとに1枚入力してください。';
+  addPost(); addGenbaDay();
+  $('tMode').innerHTML = opts(init.transports, '選択'); $('tPj').innerHTML = pjOpts(init.pjs, '選択');
+  $('bPj').innerHTML = pjOpts(init.pjs, '選択');
+  $('bMonth').innerHTML = opts([4,5,6,7,8,9,10,11,12,1,2,3].map(m => `${m < 4 ? init.fy + 1 : init.fy}年${m}月`), '選択');
+  const myMeetings = (init.meetings || []).filter(x => x.leader === (B.member || ''));
+  // 8つの定例はだれにでも見えるが、選べるのは自分がリーダーの定例だけ
+  $('grpCat').innerHTML = '<option value="">' + (myMeetings.length ? '選択' : '（リーダーの定例がありません）') + '</option>' + (init.meetings || []).map(x =>
+    `<option value="${esc(x.name)}"${x.leader === (B.member || '') ? '' : ' disabled'}>${esc(x.name)}（リーダー：${esc(String(x.leader).replace(/^[^\p{L}\p{N}]+/u, ''))}）</option>`).join('');
+  if (myMeetings.length === 1) $('grpCat').value = myMeetings[0].name;
+  if (!myMeetings.length) { $('grpSubmit').disabled = true; msg('grpMsg', 'warn', '定例のまとめ申請は、各定例のリーダーだけができます。あなたの定例の時間は、リーダーが申請すると自分の給与タブに入ります。'); }
+  const me = init.members.find(m => m.name === (B.member || ''));
+  if (me && me.pj) { $('tPj').value = me.pj; $('bPj').value = me.pj; }
+  $('groupTab').style.display = '';
+  renderGroupMembers();
+  resetTransport(); renderGroupMembers();
+  $('pj').innerHTML = pjOpts(init.pjs.filter(p => p !== 'DL全体'), '選択'); $('settle').innerHTML = opts(init.settles, '選択'); $('staff').innerHTML = opts(init.staff || [], '払った社員を選ぶ'); $('store').innerHTML = opts(init.stores, '選択');
+  $('hMonth').innerHTML = '<option value="">すべて</option>' + [4,5,6,7,8,9,10,11,12,1,2,3].map(m => `<option value="${m}">${m}月</option>`).join('');
+  addItem(); onMember(); go(document.querySelector('.tabs button.on') ? document.querySelector('.tabs button.on').dataset.p : (B.page === 'activity' ? 'work' : (B.page || 'work')));
+}
+
+function go(p) {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  document.querySelectorAll('.pane').forEach(el => el.classList.toggle('on', el.id === 'p-' + p));
+  if (p === 'history') loadHistory();
+}
+function onMember() {
+  HIST = null;
+  const m = INIT && INIT.members.find(x => x.name === member());
+  $('perm').textContent = !m ? '' : m.advance ? '立替権限：あり' : '立替権限：なし（本人立替で登録すると「要確認」になり、管理者が扱いを判断します）';
+  if (m && !$('pj').value) $('pj').value = m.pj;
+  setBudgetOpts();
+  if ($('p-history').classList.contains('on')) loadHistory();
+}
+
+/* ---------- 活動 ---------- */
+function addItem(v) {
+  v = v || {};
+  const d = document.createElement('div');
+  d.className = 'card';
+  d.innerHTML = `
+    <button class="del" onclick="this.parentNode.remove();sum()">削除</button>
+    <div class="row"><label>時間（分）</label>
+      <div><input type="number" class="min" min="5" step="5" placeholder="例：60" oninput="sum()" value="${v.minutes || ''}">
+      <div class="chips">${[15,30,60,90,120,180].map(x=>`<button type="button" onclick="setMin(this,${x})">${x<60?x+'分':x/60+'時間'}</button>`).join('')}</div></div></div>
+    <div class="row"><label>活動区分</label><select class="cat">${opts(INIT.categories, '選択')}</select></div>
+    <div class="row"><label>活動内容</label><textarea class="content" placeholder="何のために何をしたか">${esc(v.content || '')}</textarea></div>
+    <div class="row"><label>成果物URL（必須）</label><input type="url" class="url" placeholder="https://...（必須）" value="${esc(v.url || '')}"></div>`;
+  $('items').appendChild(d);
+  if (v.category) d.querySelector('.cat').value = v.category;
+  sum();
+}
+function setMin(b, v) { b.closest('.row').querySelector('.min').value = v; sum(); }
+function sum() {
+  const m = [...document.querySelectorAll('.min')].reduce((s, e) => s + (Number(e.value) || 0), 0);
+  $('total').textContent = `合計 ${m}分（${Math.round(m / 60 * 100) / 100}時間）`;
+}
+function readItems() {
+  return [...document.querySelectorAll('#items .card')].map(c => ({
+    minutes: c.querySelector('.min').value, category: c.querySelector('.cat').value,
+    content: c.querySelector('.content').value.trim(), url: c.querySelector('.url').value.trim(),
+  })).filter(i => i.minutes || i.content);
+}
+function resetActivity() { $('items').innerHTML = ''; addItem(); actEdit = null; $('aEdit').style.display = 'none'; $('addBtn').style.display = ''; $('aSubmit').textContent = '給与タブへ反映'; }
+function cancelActEdit() { resetActivity(); msg('aMsg'); }
+
+function sendActivity() {
+  const items = readItems(), errs = [];
+  if (!member()) errs.push('メンバーを選択してください');
+  if (!$('aDate').value) errs.push('活動日を選択してください');
+  else if (!inMonth_($('aDate').value)) errs.push(MONTH_NG());
+  if (!items.length) errs.push('活動を1件以上入力してください');
+  items.forEach((i, n) => { if (!(Number(i.minutes) > 0) || !i.category || !i.content) errs.push(`活動${n + 1}：時間・区分・内容は必須です`); if (!/^https?:\/\/\S+/.test(i.url)) errs.push(`活動${n + 1}：成果物などのURLは必須です（資料・投稿・議事録などのリンク）`); });
+  if (errs.length) return msg('aMsg', 'ng', errs.join('\n'));
+  $('aSubmit').disabled = true; msg('aMsg', 'warn', '反映中…');
+  const done = res => {
+    $('aSubmit').disabled = false;
+    const lines = res.results.map((r, i) => `${i + 1}. ${r.status}${r.cell ? '（' + r.cell + '）' : ''}${r.reason ? '：' + r.reason : ''}  ${r.content || ''}`);
+    if (res.check) lines.push(`\n${res.check.month}月：入力行の合計 ${res.check.rowsSum}時間／月計 ${res.check.monthTotal}時間 → ${res.check.match ? '一致' : '不一致（要確認）'}`);
+    const ok = res.results.every(r => r.status === '反映済');
+    msg('aMsg', ok ? 'ok' : 'warn', (actEdit ? '修正しました\n' : '') + lines.join('\n'));
+    if (ok) { resetActivity(); HIST = null; }
+  };
+  const fail = e => { $('aSubmit').disabled = false; msg('aMsg', 'ng', 'エラー：' + e.message); };
+  if (actEdit) google.script.run.withSuccessHandler(done).withFailureHandler(fail).updateActivity(member(), actEdit, Object.assign({ date: $('aDate').value }, items[0]));
+  else google.script.run.withSuccessHandler(done).withFailureHandler(fail).submitActivities({ member: member(), date: $('aDate').value, items });
+}
+
+/* ---------- 現地活動費・SNS投稿 ---------- */
+const allowEdit = { genba: null, sns: null };
+const PRICE = { genba: 3000, sns: 2000 };
+const WD = ['日', '月', '火', '水', '木', '金', '土'];
+
+function addGenbaDay(date, content) {
+  const rows = document.querySelectorAll('#gDays .gRowDay');
+  if (!date) {
+    const last = rows.length ? rows[rows.length - 1].querySelector('.gD').value : '';
+    if (last) { const d = new Date(last + 'T00:00'); d.setDate(d.getDate() + 1); date = ymd(d) > monthMax() ? last : ymd(d); } else date = today();
+  }
+  const d = document.createElement('div');
+  d.className = 'card gRowDay';
+  d.innerHTML = `<button class="del" type="button" onclick="this.parentNode.remove();genbaSum()">削除</button>
+    <div class="row"><label>活動日</label><input type="date" class="gD" value="${date}" min="${monthMin()}" max="${monthMax()}"></div>
+    <div class="row"><label>その日にしたこと</label><input class="gT" placeholder="例：BBQ場の基礎工事（型枠づくり）" value="${esc(content || '')}"></div>`;
+  $('gDays').appendChild(d);
+  genbaSum();
+}
+function genbaSum() { const n = document.querySelectorAll('#gDays .gRowDay').length, u = INIT.genbaUnit || 3000; $('gTotal').textContent = n ? `${n}日 × ${u.toLocaleString()}円 ＝ ${(n * u).toLocaleString()}円` : ''; }
+function addPost(v) {
+  v = v || {};
+  const d = document.createElement('div');
+  d.className = 'card';
+  d.innerHTML = `
+    <button class="del" onclick="this.parentNode.remove();snsSum()">削除</button>
+    <div class="row"><label>投稿日</label><input type="date" class="pDate" value="${v.date || today()}" min="${monthMin()}" max="${monthMax()}"></div>
+    <div class="row"><label>種類</label><select class="pKind" onchange="snsSum()">${(INIT.snsKinds || []).map(k => `<option value="${esc(k.name)}">${esc(k.name)}（${Number(k.unit).toLocaleString()}円）</option>`).join('')}</select></div>
+    <div class="row"><label>内容</label><input class="pText" placeholder="例：DOBOLAND公式Instagramで9月の現地活動を紹介" value="${esc(v.content || '')}"></div>
+    `;
+  $('posts').appendChild(d);
+  if (v.snsKind) d.querySelector('.pKind').value = v.snsKind;
+  snsSum();
+}
+function snsSum() {
+  const ks = [...document.querySelectorAll('#posts .pKind')].map(x => x.value);
+  const price = k => ((INIT.snsKinds || []).find(x => x.name === k) || {}).unit || 0;
+  const yen = ks.reduce((t, k) => t + price(k), 0);
+  $('sTotal').textContent = ks.length ? `${ks.length}件 ＝ ${yen.toLocaleString()}円` : '';
+}
+function readAllowance(t) {
+  if (t === 'genba') return [...document.querySelectorAll('#gDays .gRowDay')].map(r => ({ date: r.querySelector('.gD').value, content: r.querySelector('.gT').value.trim() }));
+  return [...document.querySelectorAll('#posts .card')].map(c => ({ date: c.querySelector('.pDate').value, kind: c.querySelector('.pKind').value, content: c.querySelector('.pText').value.trim() }));
+}
+function sendAllowance(t) {
+  const P = t === 'genba' ? 'g' : 's';
+  const entries = readAllowance(t), errs = [];
+  if (!member()) errs.push('メンバーを選択してください');
+  if (!entries.length) errs.push(t === 'genba' ? '活動した日を1日以上入れてください' : '投稿を1件以上入力してください');
+  entries.forEach(e => { if (!e.date || !e.content) errs.push(`${e.date || '日付なし'}：日付と内容は必須です`); else if (!inMonth_(e.date)) errs.push(`${e.date}：` + MONTH_NG()); });
+  if (errs.length) return msg(P + 'Msg', 'ng', errs.join('\n'));
+  $(P + 'Submit').disabled = true; msg(P + 'Msg', 'warn', '申請中…');
+  google.script.run.withSuccessHandler(r => {
+    $(P + 'Submit').disabled = false;
+    const lines = r.results.map(x => `${x.date.slice(5).replace('-', '/')}：${x.status}${x.reason ? '（' + x.reason + '）' : ''}`);
+    const ok = r.results.every(x => /済$/.test(x.status));
+    msg(P + 'Msg', ok ? 'ok' : 'warn', `${r.days}件を申請しました（${r.amount.toLocaleString()}円）\n` + lines.join('\n'));
+    if (ok) { cancelAllowEdit(t, true); HIST = null; }
+  }).withFailureHandler(e => { $(P + 'Submit').disabled = false; msg(P + 'Msg', 'ng', 'エラー：' + e.message); })
+    .submitAllowance({ member: member(), type: t, entries: allowEdit[t] ? entries.slice(0, 1) : entries, id: allowEdit[t] ? allowEdit[t].id : '' });
+}
+function cancelAllowEdit(t, keepMsg) {
+  allowEdit[t] = null;
+  if (t === 'genba') { $('gEdit').style.display = 'none'; $('gAdd').style.display = ''; $('gDays').innerHTML = ''; addGenbaDay(); $('gSubmit').textContent = '現地活動費を申請'; }
+  else { $('sEdit').style.display = 'none'; $('sAdd').style.display = ''; $('posts').innerHTML = ''; addPost(); $('sSubmit').textContent = 'SNS投稿を申請'; }
+  if (!keepMsg) msg(t === 'genba' ? 'gMsg' : 'sMsg');
+}
+function editAllow(i) {
+  const a = HIST.allowances[i];
+  allowEdit[a.type] = a;
+  if (a.type === 'genba') {
+    $('gDays').innerHTML = ''; addGenbaDay(a.date, a.content);
+    $('gEdit').style.display = 'block'; $('gAdd').style.display = 'none'; $('gSubmit').textContent = '修正を保存';
+  } else {
+    $('posts').innerHTML = ''; addPost(a);
+    $('sEdit').style.display = 'block'; $('sAdd').style.display = 'none'; $('sSubmit').textContent = '修正を保存';
+  }
+  go(a.type);
+}
+
+/* ---------- ファイル読み込み（領収書・レシート共通） ---------- */
+function readFileInput(id) {
+  const f = $(id) && !$(id).disabled ? $(id).files[0] : null;
+  if (!f) return Promise.resolve(null);
+  if (!/^(image\/|application\/pdf)/.test(f.type)) return Promise.reject(new Error('画像かPDFを選んでください'));
+  if (f.size > 10 * 1024 * 1024) return Promise.reject(new Error('ファイルが10MBを超えています'));
+  return new Promise((ok, ng) => { const rd = new FileReader(); rd.onload = () => ok({ name: f.name, mime: f.type, data: String(rd.result).split(',')[1] }); rd.onerror = () => ng(new Error('ファイルを読み込めませんでした')); rd.readAsDataURL(f); });
+}
+
+/* ---------- 経費 ---------- */
+// 予算元＝予算まとめの「大項目」（選んだPJ・企画のもの）。予算がないPJは共通の一覧
+function setBudgetOpts(keep) {
+  if (!INIT) return;
+  const cur = keep || $('budget').value;
+  const OUT = '予算外（予算にない支出）';
+  const own = (INIT.budgetsByPj || {})[$('pj').value] || [];
+  const list = own.concat([OUT]);
+  $('budget').innerHTML = opts(list, '選択');
+  if (list.includes(cur)) $('budget').value = cur; else if (!own.length && $('pj').value) $('budget').value = OUT;
+  $('budgetNote').textContent = $('pj').value && !own.length ? 'このPJ・企画には予算がないので「予算外」で申請します。' : '予算の大項目から選んでください（予算にない支出は「予算外」）。';
+}
+function resetExpense() {
+  ['content','amount','store','storeOther','note','file','rcpt'].forEach(k => $(k).value = ''); onStore();
+  $('samePaper').checked = false; $('rcpt').disabled = false; $('settle').value = ''; onSettle();
+  expEdit = null; $('eEdit').style.display = 'none'; $('fileNote').textContent = ''; $('rcptNote').textContent = ''; $('eSubmit').textContent = '経費台帳へ登録';
+}
+function cancelExpEdit() { resetExpense(); msg('eMsg'); }
+
+async function sendExpense() {
+  const p = { id: expEdit ? expEdit.id : '', member: member(), date: $('eDate').value, pj: $('pj').value, budget: $('budget').value, content: $('content').value.trim(),
+    amount: $('amount').value, store: $('store').value === 'その他' ? ($('storeOther').value.trim() ? `その他（${$('storeOther').value.trim()}）` : '') : $('store').value, settle: settleValue(), note: $('note').value.trim(), samePaper: $('samePaper').checked };
+  const miss = [['member','メンバー'],['date','購入日'],['pj','PJ・企画'],['budget','予算元'],['content','内容'],['amount','金額'],['store','支払先・店舗（その他は店名）'],['settle','精算方法（社員立替は社員も）']].filter(([k]) => !p[k]).map(([,n]) => n);
+  if (!$('file').files[0] && !(expEdit && expEdit.url)) miss.push('領収書');
+  if (!p.samePaper && !$('rcpt').files[0] && !(expEdit && expEdit.receipt)) miss.push('レシート（領収書と同じ紙ならチェック）');
+  if (miss.length) return msg('eMsg', 'ng', '未入力：' + miss.join('、'));
+  if (!inMonth_(p.date)) return msg('eMsg', 'ng', MONTH_NG());
+  $('eSubmit').disabled = true; msg('eMsg', 'warn', 'アップロード中…');
+  try { p.file = await readFileInput('file'); p.receipt = p.samePaper ? null : await readFileInput('rcpt'); }
+  catch (e) { $('eSubmit').disabled = false; return msg('eMsg', 'ng', e.message); }
+  google.script.run
+    .withSuccessHandler(r => {
+      $('eSubmit').disabled = false;
+      msg('eMsg', r.needCheck ? 'warn' : 'ok', (expEdit ? '修正しました' : '登録しました') + (r.needCheck ? '（「要確認」。備考を管理者が確認します）' : '') + '\n' + payText(p.settle)
+        + (r.fileName ? '\n領収書：' + r.folder + ' に「' + r.fileName + '」で保存' : '\n領収書：未添付'));
+      resetExpense(); HIST = null;
+    })
+    .withFailureHandler(e => { $('eSubmit').disabled = false; msg('eMsg', 'ng', 'エラー：' + e.message); })
+    .submitExpense(p);
+}
+
+// 精算方法：だれが払ったか → 学生（申請者）に振り込むのは本人立替だけ
+function settleValue() { const v = $('settle').value; if (v !== '社員立替') return v; return $('staff').value ? `社員立替（${$('staff').value}）` : ''; }
+function setSettle(v) { v = String(v || ''); const m = v.match(/^社員立替（(.+)）$/); $('settle').value = m ? '社員立替' : (/^本人立替/.test(v) ? '本人立替' : v); $('staff').value = m ? m[1] : ''; onSettle(); }
+function payText(v) {
+  if (/^本人立替/.test(v)) return '💴 あなたが自分のお金で払った分 → 給与と一緒にあなたに振り込まれます（給与タブの経費欄に入ります）。';
+  if (/^社員立替/.test(v)) return `🏢 社員${$('staff').value ? '（' + $('staff').value + 'さん）' : ''}が払った分 → あなたへの振り込みはありません（社員に精算されます）。`;
+  if (v === '現地精算済み') return '✅ その場で精算が済んでいる分 → あなたへの振り込みはありません。';
+  return '';
+}
+function onSettle() {
+  const v = $('settle').value;
+  $('staff').style.display = v === '社員立替' ? '' : 'none';
+  const t = payText(v);
+  $('settleInfo').style.display = t ? '' : 'none';
+  $('settleInfo').className = 'msg ' + (/^本人立替/.test(v) ? 'ok' : 'warn');
+  $('settleInfo').textContent = t;
+}
+function onStore() { const o = $('store').value === 'その他'; $('storeOther').style.display = o ? '' : 'none'; if (!o) $('storeOther').value = ''; }
+function setStore(v) {   // 一覧にない古い店名は「その他」＋店名として表示
+  v = String(v || ''); const m = v.match(/^その他（(.*)）$/), known = INIT.stores.includes(v);
+  $('store').value = known ? v : v ? 'その他' : ''; onStore();
+  if (!known && v) $('storeOther').value = m ? m[1] : v;
+}
+
+/* ---------- 交通費 ---------- */
+let transEdit = null;
+function memberOptions(sel) { return INIT.members.map(m => `<option${m.name === sel ? ' selected' : ''}>${esc(m.name)}</option>`).join(''); }
+function addSplit(name, amount) {
+  const d = document.createElement('div');
+  d.className = 'row-split';
+  d.style.cssText = 'display:grid;grid-template-columns:1fr 140px 60px;gap:6px;margin-bottom:6px';
+  d.innerHTML = `<select class="sName">${memberOptions(name || '')}</select><input type="number" class="sAmt" min="1" placeholder="円" value="${amount || ''}" oninput="this.dataset.touched='1';transSum()"><button class="mini del" type="button" onclick="this.parentNode.remove();transSum()">削除</button>`;
+  $('tSplit').appendChild(d);
+  transSum();
+}
+function readSplit() { return [...document.querySelectorAll('#tSplit .row-split')].map(r => ({ name: r.querySelector('.sName').value, amount: Number(r.querySelector('.sAmt').value) || 0 })); }
+function transSum() {
+  const amts = document.querySelectorAll('#tSplit .sAmt');
+  if (amts.length === 1 && !amts[0].dataset.touched) amts[0].value = $('tAmount').value;   // 1人だけなら合計をそのまま入れる
+  const s = readSplit().reduce((t, x) => t + x.amount, 0), total = Number($('tAmount').value) || 0;
+  $('tSplitSum').textContent = `内訳の合計 ${s.toLocaleString()}円 ／ 合計金額 ${total.toLocaleString()}円` + (s === total ? '（一致）' : '（合っていません）');
+  $('tSplitSum').style.color = s === total ? '' : 'var(--ng)';
+}
+function resetTransport() {
+  ['tFrom','tTo','tAmount','tNote','tFile'].forEach(k => $(k).value = '');
+  $('tFileNote').textContent = '';
+  $('tSplit').innerHTML = ''; addSplit(B.member || member());
+  transEdit = null; $('tEdit').style.display = 'none'; $('tSubmit').textContent = '交通費を申請';
+}
+function cancelTransEdit() { resetTransport(); msg('tMsg'); }
+async function sendTransport() {
+  const p = { id: transEdit ? transEdit.id : '', member: member(), date: $('tDate').value, mode: $('tMode').value, from: $('tFrom').value.trim(), to: $('tTo').value.trim(), roundTrip: $('tTrip').value,
+    pj: $('tPj').value, amount: $('tAmount').value, split: readSplit(), settle: '本人立替（給与で精算）', note: $('tNote').value.trim(), samePaper: false };
+  p.route = p.from && p.to ? `${p.from} → ${p.to}` : '';
+  const miss = [['date','利用日'],['mode','交通手段'],['from','どこから'],['to','どこまで'],['roundTrip','片道・往復'],['pj','PJ・企画'],['amount','合計金額']].filter(([k]) => !p[k]).map(([,n]) => n);
+  if (!$('tFile').files[0] && !(transEdit && transEdit.url)) miss.push('領収書');
+  if (miss.length) return msg('tMsg', 'ng', '未入力：' + miss.join('、'));
+  if (!inMonth_(p.date)) return msg('tMsg', 'ng', MONTH_NG());
+  if (p.split.some(x => !x.name || !x.amount)) return msg('tMsg', 'ng', '内訳のメンバーと金額をすべて入れてください（不要な行は削除）');
+  const s = p.split.reduce((t, x) => t + x.amount, 0);
+  if (s !== Number(p.amount)) return msg('tMsg', 'ng', `内訳の合計（${s}円）を合計金額（${p.amount}円）と同じにしてください`);
+  $('tSubmit').disabled = true; msg('tMsg', 'warn', '申請中…');
+  try { p.file = await readFileInput('tFile'); p.receipt = null; }
+  catch (e) { $('tSubmit').disabled = false; return msg('tMsg', 'ng', e.message); }
+  google.script.run.withSuccessHandler(r => {
+    $('tSubmit').disabled = false;
+    msg('tMsg', r.status === '要確認' ? 'warn' : 'ok', (transEdit ? '修正しました' : '申請しました') + (r.status === '要確認' ? '（領収書がないため「要確認」）' : ''));
+    resetTransport(); HIST = null;
+  }).withFailureHandler(e => { $('tSubmit').disabled = false; msg('tMsg', 'ng', 'エラー：' + e.message); }).submitTransport(p);
+}
+function editTrans(i) {
+  const x = HIST.transports[i];
+  if (!x.mine) return msg('hMsg', 'warn', 'この交通費は支払った人（' + x.payer + '）が修正します');
+  transEdit = x;
+  $('tDate').value = x.date; $('tMode').value = x.mode; const rt = String(x.route || '').split(/\s*(?:→|->|～|〜)\s*/); $('tFrom').value = rt[0] || ''; $('tTo').value = rt.slice(1).join(' → '); $('tTrip').value = x.roundTrip || '片道'; $('tPj').value = x.pj;
+  $('tAmount').value = x.amount; $('tNote').value = String(x.note || '').replace(/（[^）]*修正）$/, '');
+  $('tSplit').innerHTML = ''; x.split.forEach(s => addSplit(s.name, s.amount));
+  document.querySelectorAll('#tSplit .sAmt').forEach(a => a.dataset.touched = '1');
+  transSum();
+  $('tFileNote').textContent = x.url ? '（変更するときだけ選択）' : '';
+  $('tEdit').style.display = 'block'; $('tSubmit').textContent = '修正を保存';
+  msg('tMsg'); go('transport');
+}
+
+/* ---------- 追加予算 ---------- */
+let budEdit = null;
+function budSum() { const t = (Number($('bUnit').value) || 0) * (Number($('bQty').value) || 0); $('bTotal').textContent = t ? `金額 ${t.toLocaleString()}円` : ''; }
+function resetBudget() { ['bItem','bUnit','bPurpose','bLink','bFile','bNote'].forEach(k => $(k).value = ''); $('bQty').value = 1; budEdit = null; $('bEdit').style.display = 'none'; $('bSubmit').textContent = '追加予算を申請'; budSum(); }
+function cancelBudEdit() { resetBudget(); msg('bMsg'); }
+async function sendBudget() {
+  const p = { id: budEdit ? budEdit.id : '', member: member(), pj: $('bPj').value, item: $('bItem').value.trim(), month: $('bMonth').value,
+    unit: $('bUnit').value, qty: $('bQty').value, kind: $('bKind').value, purpose: $('bPurpose').value.trim(), link: $('bLink').value.trim(), note: $('bNote').value.trim() };
+  const miss = [['pj','PJ・企画'],['item','小項目'],['month','使用予定月'],['unit','単価'],['qty','数量・回数'],['kind','区分'],['purpose','目的・理由']].filter(([k]) => !p[k]).map(([,n]) => n);
+  if (miss.length) return msg('bMsg', 'ng', '未入力：' + miss.join('、'));
+  $('bSubmit').disabled = true; msg('bMsg', 'warn', '申請中…');
+  try { p.file = await readFileInput('bFile'); } catch (e) { $('bSubmit').disabled = false; return msg('bMsg', 'ng', e.message); }
+  google.script.run.withSuccessHandler(r => {
+    $('bSubmit').disabled = false; msg('bMsg', 'ok', `${budEdit ? '修正しました' : '申請しました'}（${Number(r.amount).toLocaleString()}円）。管理者が承認すると予算に加わります。`);
+    resetBudget(); HIST = null;
+  }).withFailureHandler(e => { $('bSubmit').disabled = false; msg('bMsg', 'ng', 'エラー：' + e.message); }).submitBudgetRequest(p);
+}
+function editBud(i) {
+  const x = HIST.budgetRequests[i];
+  budEdit = x;
+  $('bPj').value = x.pj; $('bItem').value = x.item; $('bMonth').value = x.month; $('bUnit').value = x.unit; $('bQty').value = x.qty;
+  $('bKind').value = x.kind; $('bPurpose').value = x.purpose; $('bLink').value = x.link; $('bNote').value = x.note;
+  $('bEdit').style.display = 'block'; $('bSubmit').textContent = '修正を保存'; budSum();
+  msg('bMsg'); go('budgetreq');
+}
+
+/* ---------- リーダーのまとめ申請 ---------- */
+function renderGroupMembers(extra) {
+  if (!INIT) return;
+  const mt = (INIT.meetings || []).find(x => x.name === $('grpCat').value);
+  const prev = {};
+  document.querySelectorAll('#grpMembers .gRow').forEach(r => prev[r.dataset.name] = { on: r.querySelector('.gOn2').checked, min: r.querySelector('.gMin').value, next: r.querySelector('.gNext').value, added: r.dataset.added });
+  if (!mt) { $('grpMembers').innerHTML = '<p class="hint">定例を選んでください</p>'; $('grpAddSel').innerHTML = ''; return grpSum(); }
+  const names = [...new Set(mt.members.concat(Object.keys(prev).filter(n => prev[n].added), extra ? [extra] : []))];
+  const pjOf = n => (INIT.members.find(m => m.name === n) || {}).pj || '';
+  $('grpMembers').innerHTML = `<table class="list"><tr><th style="width:40px">参加</th><th>メンバー</th><th style="width:100px">時間（分）</th><th>ネクストアクション（任意）</th></tr>` +
+    names.map(n => { const p = prev[n] || { on: true, min: $('grpMin').value, next: '', added: n === extra || !mt.members.includes(n) ? '1' : '' };
+      return `<tr class="gRow" data-name="${esc(n)}" data-added="${p.added || ''}"><td><input type="checkbox" class="gOn2" style="width:auto" ${p.on ? 'checked' : ''} onchange="grpSum()"></td>
+        <td>${esc(n)}<br><span class="hint">${esc(pjOf(n))}${p.added ? '・追加' : ''}</span></td>
+        <td><input type="number" class="gMin" min="5" step="5" value="${esc(p.min || '')}" oninput="grpSum()"></td>
+        <td><input class="gNext" placeholder="例：11/5までに見積もりを集める" value="${esc(p.next || '')}"></td></tr>`; }).join('') + '</table>';
+  $('grpAddSel').innerHTML = opts(INIT.members.map(m => m.name).filter(n => !names.includes(n)), '参加者を選ぶ');
+  grpSum();
+}
+function grpAddMember() { const n = $('grpAddSel').value; if (!n) return; renderGroupMembers(n); }
+function grpApplyAll() { document.querySelectorAll('#grpMembers .gRow').forEach(r => { if (r.querySelector('.gOn2').checked) r.querySelector('.gMin').value = $('grpMin').value; }); grpSum(); }
+function readGroup() { return [...document.querySelectorAll('#grpMembers .gRow')].filter(r => r.querySelector('.gOn2').checked).map(r => ({ name: r.dataset.name, minutes: Number(r.querySelector('.gMin').value) || 0, next: r.querySelector('.gNext').value.trim() })); }
+function grpSum() { const l = readGroup(); $('grpTotal').textContent = `${l.length}人` + (l.some(x => !x.minutes) ? '（時間が空の人がいます）' : ''); }
+function sendGroup() {
+  const members = readGroup();
+  const p = { leader: B.member || member(), date: $('grpDate').value, category: $('grpCat').value, content: $('grpContent').value.trim(), url: $('grpUrl').value.trim(), members };
+  const errs = [];
+  if (!p.date) errs.push('日付'); else if (!inMonth_(p.date)) return msg('grpMsg', 'ng', MONTH_NG()); if (!p.category) errs.push('定例'); if (!p.content) errs.push('内容'); if (!/^https?:\/\/\S+/.test(p.url)) errs.push('議事録などのURL');
+  if (errs.length) return msg('grpMsg', 'ng', '未入力：' + errs.join('、'));
+  if (!members.length) return msg('grpMsg', 'ng', '参加したメンバーにチェックを入れてください');
+  if (members.some(x => !x.minutes)) return msg('grpMsg', 'ng', 'チェックした人全員に時間を入れてください');
+  $('grpSubmit').disabled = true; msg('grpMsg', 'warn', `${members.length}人分を申請中…（1人数秒かかります）`);
+  google.script.run.withSuccessHandler(rs => {
+    $('grpSubmit').disabled = false;
+    const ok = rs.every(r => r.status === '反映済');
+    msg('grpMsg', ok ? 'ok' : 'warn', rs.map(r => `${r.name}：${r.minutes}分 → ${r.status}${r.reason ? '（' + r.reason + '）' : ''}`).join('\n'));
+  }).withFailureHandler(e => { $('grpSubmit').disabled = false; msg('grpMsg', 'ng', 'エラー：' + e.message); }).submitGroupActivity(p);
+}
+
+/* ---------- 履歴（修正・削除） ---------- */
+function loadHistory() {
+  if (!member()) { $('hList').innerHTML = ''; return msg('hMsg', 'warn', 'メンバーを選択してください'); }
+  msg('hMsg', 'warn', '読み込み中…');
+  google.script.run.withSuccessHandler(h => { HIST = h; msg('hMsg'); renderHistory(); })
+    .withFailureHandler(e => msg('hMsg', 'ng', 'エラー：' + e.message)).getHistory(member());
+}
+const monthOf = d => Number(String(d).slice(5, 7));
+const md = d => esc(String(d).slice(5).replace('-', '/'));
+const yen = n => '¥' + Number(n || 0).toLocaleString();
+const link = (u, t) => u ? ` <a href="${esc(u)}" target="_blank">${t}</a>` : '';
+function delBtn(kind, i) { return `<button class="mini del" onclick="askDel(this,'${kind}',${i})">削除</button>`; }
+function table(head, rows, empty) { return !rows.length ? `<p class="hint">${empty}</p>` : `<table class="list"><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr>${rows.join('')}</table>`; }
+function renderHistory() {
+  if (!HIST) return;
+  const mf = $('hMonth').value, k = $('hKind').value;
+  const inMonth = d => !mf || monthOf(d) == mf;
+  let html = '';
+  if (k === 'activity') {
+    html = table(['日付', '時間', '区分', '内容', '成果物', ''], HIST.activities.map((a, i) => [a, i]).filter(([a]) => inMonth(a.date)).map(([a, i]) =>
+      `<tr><td>${md(a.date)}</td><td class="num">${a.hours}h</td><td>${esc(a.category)}</td><td>${esc(a.content)}</td><td>${link(a.url, '開く')}</td>
+       <td>${/MTG|定例会|本幹部会/.test(a.category) ? '<span class="hint">リーダーが申請</span>' : `<button class="mini" onclick="editAct(${i})">修正</button>${delBtn('activity', i)}`}</td></tr>`), '稼働時間の記録はありません');
+  } else if (k === 'genba' || k === 'sns') {
+    const rows = HIST.allowances.map((a, i) => [a, i]).filter(([a]) => a.type === k && inMonth(a.date));
+    const sum = rows.reduce((s, [a]) => s + Number(a.amount || 0), 0);
+    html = (rows.length ? `<p class="hint">${rows.length}件　合計 ${yen(sum)}</p>` : '') + table(['日付', '内容', k === 'sns' ? '投稿' : '', '金額', ''], rows.map(([a, i]) =>
+      `<tr><td>${md(a.date)}</td><td>${k === 'sns' ? `<span class="badge">${esc(/投稿$/.test(a.snsKind) ? a.snsKind : a.snsKind + '投稿')}</span> ` : ''}${esc(a.content)}</td><td>${k === 'sns' ? link(a.url, '開く') : ''}</td><td class="num">${yen(a.amount)}</td><td><button class="mini" onclick="editAllow(${i})">修正</button>${delBtn('allow', i)}</td></tr>`), '記録はありません');
+  } else if (k === 'transport') {
+    html = table(['利用日', '手段', '区間', '合計', '内訳', '状態', ''], HIST.transports.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
+      `<tr><td>${md(x.date)}</td><td>${esc(x.mode)}</td><td>${esc(x.route)}${link(x.url, '領収書')}${x.receipt && x.receipt !== x.url ? link(x.receipt, 'レシート') : ''}</td><td class="num">${yen(x.amount)}</td>
+       <td>${x.split.map(s => esc(s.name) + ' ' + yen(s.amount)).join('<br>')}${x.mine ? '' : `<br><span class="hint">支払：${esc(x.payer)}</span>`}</td><td><span class="badge ${esc(x.status)}">${esc(x.status)}</span></td>
+       <td>${x.mine ? `<button class="mini" onclick="editTrans(${i})">修正</button>${delBtn('trans', i)}` : ''}</td></tr>`), '交通費の記録はありません');
+  } else if (k === 'budgetreq') {
+    html = table(['申請日', 'PJ・企画', '小項目', '金額', '使用予定', '状態', ''], HIST.budgetRequests.map((x, i) =>
+      `<tr><td>${md(x.date)}</td><td>${esc(pjL(x.pj))}</td><td>${esc(x.item)}<br><span class="hint">${esc(x.purpose)}</span></td><td class="num">${yen(x.amount)}</td><td>${esc(x.month)}</td>
+       <td><span class="badge">${esc(x.status)}</span></td><td>${x.status === '承認' || x.status === '却下' ? '' : `<button class="mini" onclick="editBud(${i})">修正</button>${delBtn('bud', i)}`}</td></tr>`), '追加予算の申請はありません');
+  } else {
+    html = table(['購入日', '金額', 'PJ・企画', '予算元', '内容', '精算', '状態', ''], HIST.expenses.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
+      `<tr><td>${md(x.date)}</td><td class="num">${yen(x.amount)}</td><td>${esc(pjL(x.pj))}</td><td>${esc(x.budget)}</td>
+       <td>${esc(x.content)}${link(x.url, '領収書')}${x.receipt && x.receipt !== x.url ? link(x.receipt, 'レシート') : ''}</td><td>${esc(x.settle)}</td><td><span class="badge ${esc(x.status)}">${esc(x.status)}</span></td>
+       <td><button class="mini" onclick="editExp(${i})">修正</button>${delBtn('expense', i)}</td></tr>`), '経費の記録はありません');
+  }
+  $('hList').innerHTML = html;
+}
+function askDel(btn, kind, i) {
+  if (!btn.classList.contains('sure')) { btn.classList.add('sure'); btn.textContent = '本当に削除'; setTimeout(() => { btn.classList.remove('sure'); btn.textContent = '削除'; }, 4000); return; }
+  btn.disabled = true; msg('hMsg', 'warn', '削除中…');
+  const r = google.script.run.withSuccessHandler(() => { msg('hMsg', 'ok', '削除しました'); loadHistory(); })
+    .withFailureHandler(e => { btn.disabled = false; msg('hMsg', 'ng', 'エラー：' + e.message); });
+  if (kind === 'activity') r.deleteActivity(member(), HIST.activities[i]);
+  else if (kind === 'allow') r.deleteAllowance(HIST.allowances[i].id, member());
+  else if (kind === 'trans') r.deleteTransport(HIST.transports[i].id, member());
+  else if (kind === 'bud') r.deleteBudgetRequest(HIST.budgetRequests[i].id, member());
+  else r.deleteExpense(HIST.expenses[i].id, member());
+}
+function editAct(i) {
+  const a = HIST.activities[i];
+  actEdit = a;
+  $('items').innerHTML = '';
+  addItem({ minutes: Math.round(a.hours * 60), category: a.category, content: a.content, url: a.url });
+  $('aDate').value = a.date; $('aEdit').style.display = 'block'; $('addBtn').style.display = 'none'; $('aSubmit').textContent = '修正を保存';
+  msg('aMsg'); go('work');
+}
+function editExp(i) {
+  const x = HIST.expenses[i];
+  expEdit = x;
+  $('eDate').value = x.date; $('amount').value = x.amount; $('pj').value = x.pj; setBudgetOpts(x.budget); $('budget').value = x.budget; $('content').value = x.content;
+  setStore(x.store); setSettle(x.settle); $('note').value = String(x.note || '').replace(/（[^）]*修正）$/, ''); $('file').value = ''; $('rcpt').value = '';
+  $('samePaper').checked = !!x.samePaper; $('rcpt').disabled = !!x.samePaper;
+  $('fileNote').textContent = x.url ? '（変更するときだけ選択）' : ''; $('rcptNote').textContent = x.receipt && !x.samePaper ? '（変更するときだけ選択）' : '';
+  $('eEdit').style.display = 'block'; $('eSubmit').textContent = '修正を保存';
+  msg('eMsg'); go('expense');
+}
+</script>
+<script>
+/* ---------- パイナップル：写真は送る前に小さくする（通信量と待ち時間を減らす） ---------- */
+async function pineShrink(file) {
+  if (!/^image\/(jpeg|png|webp|heic|heif)/.test(file.type) || file.size < 700 * 1024 || !window.createImageBitmap) return null;
+  try {
+    const bmp = await createImageBitmap(file);
+    const s = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+    return blob && blob.size < file.size ? blob : null;
+  } catch (e) { return null; }
+}
+function readFileInput(id) {
+  const f = $(id) && !$(id).disabled ? $(id).files[0] : null;
+  if (!f) return Promise.resolve(null);
+  if (!/^(image\/|application\/pdf)/.test(f.type)) return Promise.reject(new Error('画像かPDFを選んでください'));
+  return pineShrink(f).then(small => {
+    const src = small || f;
+    if (src.size > 10 * 1024 * 1024) throw new Error('ファイルが10MBを超えています');
+    return new Promise((ok, ng) => {
+      const rd = new FileReader();
+      rd.onload = () => ok({ name: small ? f.name.replace(/\.\w+$/, '') + '.jpg' : f.name, mime: small ? 'image/jpeg' : f.type, data: String(rd.result).split(',')[1] });
+      rd.onerror = () => ng(new Error('ファイルを読み込めませんでした'));
+      rd.readAsDataURL(src);
+    });
+  });
+}
+/* ---------- オフラインでも起動できるように ---------- */
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+</script>
+</body></html>
