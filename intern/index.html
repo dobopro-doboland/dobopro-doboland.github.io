@@ -124,6 +124,9 @@
   <div id="items"></div>
   <button class="btn sub" type="button" onclick="addItem()">＋ 交通費を追加</button>
 
+  <div class="field hidden" id="overBox"><label>振込金額を直接入力（管理者だけ・空欄なら自動計算）</label>
+    <input id="payOverride" type="number" inputmode="numeric" min="0" step="1" placeholder="例）8000" oninput="refresh()">
+    <div class="note">入れた金額がそのまま振込予定額になります（割引率は自動計算しません）。</div></div>
   <div class="sum" id="sumBox"></div>
 
   <label class="check" id="agreePrepaidBox"><input type="checkbox" id="agreePrepaid"><span>この交通費補助は<b>事前申告制</b>であることを理解しました。</span></label>
@@ -218,11 +221,13 @@ function calc() {
   const total = [...document.querySelectorAll('.item .amount')].reduce((s, e) => s + Math.round(Number(e.value) || 0), 0);
   const count = askRef() ? Number($('referCount').value) || 0 : 0;
   const rate = INIT ? rateOf(count) : 0;
+  const ov = ADM() ? $('payOverride').value.trim() : '';
+  if (ov !== '' && Number(ov) >= 0) { const p = Math.round(Number(ov)); return { total, rate: total ? p / total : 0, pay: p, self: total - p, count, referred: isReferred(), full: isFull(), over: true }; }
   const pay = Math.ceil(Math.round(total * rate * 1e6) / 1e6);
   return { total, rate, pay, self: total - pay, count, referred: isReferred(), full: isFull() };
 }
 function sumHtml(c, pd) {
-  const why = c.full ? '全額支給' : `紹介 ${c.count}人${c.referred ? '＋紹介された' : ''}`;
+  const why = c.over ? '管理者が金額を直接入力' : c.full ? '全額支給' : `紹介 ${c.count}人${c.referred ? '＋紹介された' : ''}`;
   return `<div><span>交通費の合計</span><span>${yen(c.total)}</span></div><div><span>支給率（${why}）</span><span>${Math.round(c.rate * 100)}%</span></div>
     <div><span>あなたの負担</span><span>${yen(c.self)}</span></div>
     <div class="pay"><span>振込予定額</span><span>${yen(c.pay)}</span></div>
@@ -261,7 +266,7 @@ function gather() {
     kind: $('kind').value, kindDetail: $('kind').value === 'その他' ? $('kindDetail').value : '', sei: $('sei').value.replace(/[\s　]+/g, ''), mei: $('mei').value.replace(/[\s　]+/g, ''), school: $('school').value.trim(), schedule: $('schedule').value,
     referCount: ask ? Number($('referCount').value) || 0 : 0, hasReferrer: ask ? $('hasReferrer').value : '', referredByList: referredByNames(), referredBy: referredByNames().filter(Boolean).join('、'),
     referred: ask ? [...document.querySelectorAll('.refName')].map(e => e.value.trim()) : [],
-    items, agreePrepaid: $('agreePrepaid').checked, agreeBank: $('agreeBank').checked, editId: EDIT ? EDIT.id : '', applyMonth: ADM() ? $('applyMonth').value : '',
+    items, agreePrepaid: $('agreePrepaid').checked, agreeBank: $('agreeBank').checked, editId: EDIT ? EDIT.id : '', applyMonth: ADM() ? $('applyMonth').value : '', payOverride: ADM() ? $('payOverride').value.trim() : '',
   };
 }
 function validate(p) {
@@ -283,6 +288,7 @@ function validate(p) {
     if (!ADM() && !x.fileEl.files[0] && !x.keepUrl) return `交通費 ${i + 1}：領収書をアップロードしてください`;
     if (x.fileEl.files[0] && !/^(image\/|application\/pdf)/.test(x.fileEl.files[0].type)) return `交通費 ${i + 1}：領収書は写真かPDFにしてください`;
   }
+  if (p.payOverride !== '' && !(Number(p.payOverride) >= 0)) return '振込金額は0以上の数字で入れてください';
   if (need('agreePrepaid') && !p.agreePrepaid) return '事前申告制の確認にチェックしてください';
   if (need('agreeBank') && !p.agreeBank) return '銀行口座フォームの確認にチェックしてください';
   return '';
@@ -332,7 +338,7 @@ async function send() {
     $('doneTitle').textContent = r.edited ? '修正を保存しました。' : '送信が完了しました。';
     $('doneId').innerHTML = `申請番号：<b style="font-size:17px;user-select:all">${esc(r.id)}</b><br><span class="note">内容を直したり取り消したりするときに使います。スクリーンショットなどで保存してください。</span>`;
     $('doneSum').innerHTML = `<div><span>申請番号</span><span>${esc(r.id)}</span></div><div><span>氏名</span><span>${esc(r.name)}</span></div><div><span>日程</span><span>${esc(r.schedule)}</span></div>` +
-      sumHtml({ total: r.total, rate: r.rate, pay: r.pay, self: r.self, count: p.referCount, referred: p.hasReferrer === 'いる', full: r.full }, pd) + (r.referredPending ? '<div class="note" style="display:block">紹介された側の割引は、管理者が確認してから決まります。</div>' : '');
+      sumHtml({ total: r.total, rate: r.rate, pay: r.pay, self: r.self, count: p.referCount, referred: p.hasReferrer === 'いる', full: r.full, over: p.payOverride !== '' && p.payOverride != null }, pd) + (r.referredPending ? '<div class="note" style="display:block">紹介された側の割引は、管理者が確認してから決まります。</div>' : '');
     $('confirmView').classList.add('hidden'); $('doneView').classList.remove('hidden'); window.scrollTo(0, 0);
   } catch (err) {
     msg('msgConfirm', 'ng', err.message === 'Failed to fetch' ? '通信できませんでした。電波のよい所でもう一度送信してください' : esc(err.message));
@@ -353,6 +359,7 @@ async function loadEdit() {
     $('sei').value = d.sei; $('mei').value = d.mei; $('school').value = d.school || '';
     setSel($('schedule'), d.schedule);
     if (ADM() && d.applyMonth && [...$('applyMonth').options].some(o => o.value === d.applyMonth)) $('applyMonth').value = d.applyMonth;
+    if (ADM()) $('payOverride').value = d.payOverride === '' || d.payOverride == null ? '' : d.payOverride;
     $('referCount').value = String(d.referCount || 0); renderReferred();
     [...document.querySelectorAll('.refName')].forEach((e, i) => { e.value = d.referred[i] || ''; });
     $('hasReferrer').value = d.hasReferrer; $('referrerCount').value = String(Math.max(1, d.referredByList.length || 1)); renderReferrer();
@@ -397,6 +404,7 @@ async function delApp(btn) {
       $('applyMonth').value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
       $('applyMonth').onchange = refresh;
       $('monthBox').classList.remove('hidden');
+      $('overBox').classList.remove('hidden');
     }
     $('fullText').textContent = (INIT.fullKinds || []).join('・') || '（なし）';
     $('rateTable').innerHTML = INIT.rates.filter(x => x.count > 0).map(x => `<tr><td>${x.count}人紹介${x.count === Math.max(...INIT.rates.map(y => y.count)) ? '以上' : ''}</td><td>→ ${Math.round(x.rate * 100)}%オフ</td></tr>`).join('');
