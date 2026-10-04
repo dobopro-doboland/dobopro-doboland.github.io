@@ -235,7 +235,7 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.02</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.03</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -388,8 +388,8 @@ function applyInit(init) {
   INIT = init;
   // 画面とサーバーの番号が違うとき（古い画面のまま）は知らせる
   const appV = $('verApp').textContent;
-  if (/v1.02/.test(appV) && init.version) $('verApp').textContent = init.version;
-  $('verWarn').innerHTML = init.version && !/v1.02/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
+  if (/v1.03/.test(appV) && init.version) $('verApp').textContent = init.version;
+  $('verWarn').innerHTML = init.version && !/v1.03/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
   document.body.classList.toggle('adm', ADM());
   $('admBar').style.display = ADM() ? 'block' : 'none';
   if (ADM()) {
@@ -477,7 +477,7 @@ function addItem(day, v) {
     <div class="row"><label>時間（分）</label>
       <div><input type="number" class="min" min="5" step="5" placeholder="例：60" oninput="sum()" value="${v.minutes || ''}">
       <div class="chips">${[15,30,60,90,120,180].map(x=>`<button type="button" onclick="setMin(this,${x})">${x<60?x+'分':x/60+'時間'}</button>`).join('')}</div></div></div>
-    <div class="row"><label>活動区分</label><select class="cat">${opts(cats, '選択')}</select></div>
+    <div class="row"><label class="${ADM() ? 'opt' : ''}">活動区分</label><select class="cat">${opts(cats, ADM() ? '（なし）' : '選択')}</select></div>
     <div class="row" style="${SHOW('work', 'content') ? '' : 'display:none'}">${LBL('work', 'content')}<textarea class="content" placeholder="${PH('work', 'content')}">${esc(v.content || '')}</textarea></div>
     <div class="row" style="${SHOW('work', 'url') ? '' : 'display:none'}">${LBL('work', 'url')}<input type="url" class="url" placeholder="${PH('work', 'url')}" value="${esc(v.url || '')}"></div>
     ${extrasHtml('work')}`;
@@ -498,7 +498,7 @@ function readDays(errs) {
       const it = { minutes: c.querySelector('.min').value, category: c.querySelector('.cat').value, content: c.querySelector('.content').value.trim(), url: c.querySelector('.url').value.trim() };
       it.extra = readExtras(c, errs, `${date || '日付なし'} 活動${n + 1}：`);
       return it;
-    }).filter(i => i.minutes || i.content || i.category);
+    }).filter(i => i.minutes || i.content || (!ADM() && i.category));
     return { date, items };
   }).filter(d => d.items.length);
 }
@@ -513,7 +513,7 @@ function sendActivity() {
     if (!d.date) errs.push('活動日を選択してください'); else if (!inMonth_(d.date)) errs.push(`${d.date}：` + MONTH_NG());
     d.items.forEach((i, n) => {
       const t = `${d.date} 活動${n + 1}：`;
-      if (!(Number(i.minutes) > 0) || !i.category) errs.push(t + '時間・活動区分は必須です');
+      if (!(Number(i.minutes) > 0) || (!ADM() && !i.category)) errs.push(t + (ADM() ? '時間は必須です' : '時間・活動区分は必須です'));   // 管理者は日付と時間だけでよい
       if (REQ('work', 'content') && !i.content) errs.push(t + FC('work', 'content').label + 'は必須です');
       if (REQ('work', 'url') && !/^https?:\/\/\S+/.test(i.url)) errs.push(t + FC('work', 'url').label + 'は必須です（資料・投稿・議事録などのリンク）');
     });
