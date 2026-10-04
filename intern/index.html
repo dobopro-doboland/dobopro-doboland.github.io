@@ -132,6 +132,8 @@
   <button class="btn sub" type="button" onclick="location.reload()">別の申請をする</button>
 </div>
 
+<div style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.02</span><span id="verWarn"></span></div>
+
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbwgDYCaeTYSSm5ozOPx-EK_5JuKouHXV1BlTihzQcA9dxEnI6AVZTv3668xHtgGQ9skCg/exec';
 const $ = id => document.getElementById(id);
@@ -322,6 +324,7 @@ async function send() {
   try {
     INIT = await post({ action: 'internInit' });
     if (ADM()) { $('admBox').classList.remove('hidden'); $('admName').textContent = AUTH.name; }
+    if (INIT.version && INIT.version !== $('verApp').textContent) $('verWarn').innerHTML = `<br><span style="color:var(--ng)">新しい版（${esc(INIT.version)}）があります。ページを再読み込みしてください</span>`;
     INIT.kinds.forEach(k => $('kind').insertAdjacentHTML('beforeend', `<option>${esc(k)}</option>`));
     (INIT.otherSubs || []).forEach(k => $('kindDetail').insertAdjacentHTML('beforeend', `<option>${esc(k)}</option>`));
     INIT.schedules.forEach(s => $('schedule').insertAdjacentHTML('beforeend', `<option value="${esc(s.name)}">${esc(s.name)}${s.hidden ? '（非表示の日程）' : ''}</option>`));
