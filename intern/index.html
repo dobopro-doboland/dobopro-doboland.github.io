@@ -107,6 +107,7 @@
   </div>
   <div class="field" id="schoolBox"><label class="req" id="schoolLbl">学校名</label><input id="school" placeholder="例）〇〇大学"></div>
   <div class="field"><label class="req" id="schedLbl">日程</label><select id="schedule"><option value="">選択</option></select></div>
+  <div class="field hidden" id="monthBox"><label>申請月（管理者だけ。対象月になり、振込予定日はその翌月15日）</label><select id="applyMonth"></select></div>
 
   <div id="refBox">
     <div class="field"><label class="req">あなたが紹介した人数</label><select id="referCount"></select></div>
@@ -175,7 +176,7 @@ async function post(body) {
 const F = id => ((INIT && INIT.fields) || {})[id] || { show: true, req: true, label: '' };
 const need = id => !ADM() && F(id).show && F(id).req;
 /** 振込予定日：申請した翌月の15日 */
-function payDate() { const d = new Date(); const p = new Date(d.getFullYear(), d.getMonth() + 1, 15); return `${p.getFullYear()}年${p.getMonth() + 1}月15日（${WD[p.getDay()]}）`; }
+function payDate() { const am = ADM() && $('applyMonth').value; const d = am ? new Date(Number(am.slice(0, 4)), Number(am.slice(5, 7)) - 1, 1) : new Date(); const p = new Date(d.getFullYear(), d.getMonth() + 1, 15); return `${p.getFullYear()}年${p.getMonth() + 1}月15日（${WD[p.getDay()]}）`; }
 /** 全額支給の区分か（中期インターン生・橋梁コンペ応募者・駅舎リノベコンペ応募者など） */
 function isFull() {
   if (!INIT) return false;
@@ -260,7 +261,7 @@ function gather() {
     kind: $('kind').value, kindDetail: $('kind').value === 'その他' ? $('kindDetail').value : '', sei: $('sei').value.replace(/[\s　]+/g, ''), mei: $('mei').value.replace(/[\s　]+/g, ''), school: $('school').value.trim(), schedule: $('schedule').value,
     referCount: ask ? Number($('referCount').value) || 0 : 0, hasReferrer: ask ? $('hasReferrer').value : '', referredByList: referredByNames(), referredBy: referredByNames().filter(Boolean).join('、'),
     referred: ask ? [...document.querySelectorAll('.refName')].map(e => e.value.trim()) : [],
-    items, agreePrepaid: $('agreePrepaid').checked, agreeBank: $('agreeBank').checked, editId: EDIT ? EDIT.id : '',
+    items, agreePrepaid: $('agreePrepaid').checked, agreeBank: $('agreeBank').checked, editId: EDIT ? EDIT.id : '', applyMonth: ADM() ? $('applyMonth').value : '',
   };
 }
 function validate(p) {
@@ -293,6 +294,7 @@ function toConfirm() {
   const rows = [['区分', p.kind + (p.kindDetail ? `（${p.kindDetail}）` : '')], ['氏名', p.sei + p.mei]];
   if (F('school').show) rows.push(['学校名', p.school || '—']);
   rows.push(['日程', p.schedule || '（日程なし）']);
+  if (p.applyMonth) rows.push(['申請月', p.applyMonth.replace('-', '年') + '月']);
   if (askRef()) rows.push(['あなたが紹介した人数', p.referCount + '人'], ['あなたが紹介した人', p.referred.filter(Boolean).join('、') || '—'], ['あなたを紹介した人', p.hasReferrer === 'いる' ? (p.referredBy || 'いる') : 'いない']);
   rows.push(['交通費', p.items.map((x, i) => `${i + 1}. ${x.from || x.to ? `${x.from} → ${x.to}` : '（区間なし）'}　${yen(x.amount)}（領収書：${x.fileEl.files[0] ? x.fileEl.files[0].name : x.keepUrl ? '登録済みのまま' : 'なし'}）`).join('\n')]);
   $('confirmList').innerHTML = rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
@@ -350,6 +352,7 @@ async function loadEdit() {
     setSel($('kind'), d.kind); setSel($('kindDetail'), d.kindDetail);
     $('sei').value = d.sei; $('mei').value = d.mei; $('school').value = d.school || '';
     setSel($('schedule'), d.schedule);
+    if (ADM() && d.applyMonth && [...$('applyMonth').options].some(o => o.value === d.applyMonth)) $('applyMonth').value = d.applyMonth;
     $('referCount').value = String(d.referCount || 0); renderReferred();
     [...document.querySelectorAll('.refName')].forEach((e, i) => { e.value = d.referred[i] || ''; });
     $('hasReferrer').value = d.hasReferrer; $('referrerCount').value = String(Math.max(1, d.referredByList.length || 1)); renderReferrer();
@@ -386,7 +389,15 @@ async function delApp(btn) {
     INIT.kinds.forEach(k => $('kind').insertAdjacentHTML('beforeend', `<option>${esc(k)}</option>`));
     (INIT.otherSubs || []).forEach(k => $('kindDetail').insertAdjacentHTML('beforeend', `<option>${esc(k)}</option>`));
     INIT.schedules.forEach(s => $('schedule').insertAdjacentHTML('beforeend', `<option value="${esc(s.name)}">${esc(s.name)}${s.hidden ? '（非表示の日程）' : ''}</option>`));
-    if (ADM()) { $('schedule').options[0].textContent = '（日程なし）'; $('schedLbl').className = ''; $('eNameBox').classList.add('hidden'); }
+    if (ADM()) {
+      $('schedule').options[0].textContent = '（日程なし）'; $('schedLbl').className = ''; $('eNameBox').classList.add('hidden');
+      // 申請月：年度（9月〜8月）の12か月。最初は今月
+      const now = new Date(), fy = now.getMonth() + 1 >= 9 ? now.getFullYear() : now.getFullYear() - 1, pad = n => String(n).padStart(2, '0');
+      $('applyMonth').innerHTML = [9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8].map(m => { const y = m >= 9 ? fy : fy + 1; return `<option value="${y}-${pad(m)}">${y}年${m}月</option>`; }).join('');
+      $('applyMonth').value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+      $('applyMonth').onchange = refresh;
+      $('monthBox').classList.remove('hidden');
+    }
     $('fullText').textContent = (INIT.fullKinds || []).join('・') || '（なし）';
     $('rateTable').innerHTML = INIT.rates.filter(x => x.count > 0).map(x => `<tr><td>${x.count}人紹介${x.count === Math.max(...INIT.rates.map(y => y.count)) ? '以上' : ''}</td><td>→ ${Math.round(x.rate * 100)}%オフ</td></tr>`).join('');
     const md = INIT.referredModes || [], rr = Math.round((Number(INIT.referredRate) || 0) * 100);
