@@ -235,6 +235,8 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.02</span><span id="verWarn"></span></div>
+
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
 const PINE_API = 'https://script.google.com/macros/s/AKfycbwgDYCaeTYSSm5ozOPx-EK_5JuKouHXV1BlTihzQcA9dxEnI6AVZTv3668xHtgGQ9skCg/exec';
@@ -383,7 +385,11 @@ if (!cachedInit) msg('aMsg', 'warn', '読み込み中…');
 });
 
 function applyInit(init) {
-  INIT = init; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
+  INIT = init;
+  // 画面とサーバーの番号が違うとき（古い画面のまま）は知らせる
+  const appV = $('verApp').textContent;
+  if (/v1.02/.test(appV) && init.version) $('verApp').textContent = init.version;
+  $('verWarn').innerHTML = init.version && !/v1.02/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
   document.body.classList.toggle('adm', ADM());
   $('admBar').style.display = ADM() ? 'block' : 'none';
   if (ADM()) {
