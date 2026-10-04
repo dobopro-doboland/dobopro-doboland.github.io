@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#111111">
+<title>パイナップル ショート動画</title>
+<link rel="icon" href="../app/icon.svg" type="image/svg+xml">
+<style>
+  :root { --ink:#111; --white:#fff; --yellow:#ffd23f; --green:#2f6b2a; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; height:100%; background:#111; color:var(--white); font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif; overflow:hidden; }
+  #feed { height:100dvh; overflow-y:auto; scroll-snap-type:y mandatory; }
+  .short { height:100dvh; scroll-snap-align:start; scroll-snap-stop:always; display:flex; align-items:center; justify-content:center; position:relative; }
+  .card { position:relative; width:min(100vw, calc(100dvh * 9 / 16)); height:100dvh; overflow:hidden; border-radius:0; }
+  @media (min-width:600px) { .card { height:min(100dvh, 860px); width:min(484px, calc(min(100dvh, 860px) * 9 / 16)); border-radius:22px; box-shadow:0 10px 40px rgba(0,0,0,.6); } }
+  .bg { position:absolute; inset:0; transition:background 0.6s; }
+  .bars { position:absolute; top:calc(10px + env(safe-area-inset-top)); left:10px; right:10px; display:flex; gap:4px; z-index:5; }
+  .bar { flex:1; height:4px; background:rgba(255,255,255,.35); border-radius:3px; overflow:hidden; }
+  .bar i { display:block; height:100%; width:0; background:#fff; }
+  .top { position:absolute; top:calc(22px + env(safe-area-inset-top)); left:14px; right:14px; display:flex; align-items:center; gap:8px; z-index:5; font-weight:bold; font-size:14px; text-shadow:0 1px 3px rgba(0,0,0,.4); }
+  .top .ic { width:30px; height:30px; border-radius:50%; background:#fff; display:grid; place-items:center; font-size:18px; }
+  .top .ttl { flex:1; }
+  .scene { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:70px 22px 120px; text-align:center; }
+  .emoji { font-size:min(30vw, 130px); line-height:1.1; filter:drop-shadow(0 6px 10px rgba(0,0,0,.25)); }
+  .big { font-size:min(9vw, 40px); font-weight:900; line-height:1.25; margin-top:14px; letter-spacing:.02em;
+         -webkit-text-stroke:2px rgba(0,0,0,.35); paint-order:stroke fill; text-shadow:0 3px 0 rgba(0,0,0,.25); }
+  .big em { font-style:normal; color:var(--yellow); }
+  .sub { margin-top:14px; font-size:min(5vw, 20px); font-weight:bold; background:rgba(0,0,0,.45); padding:8px 14px; border-radius:12px; line-height:1.5; }
+  .pop { animation:pop .5s cubic-bezier(.2,1.6,.4,1) both; }
+  .rise { animation:rise .5s .15s ease-out both; }
+  .rise2 { animation:rise .5s .35s ease-out both; }
+  .wiggle { animation:wiggle 1.4s .6s ease-in-out infinite; }
+  @keyframes pop { from { transform:scale(.2) rotate(-12deg); opacity:0; } to { transform:scale(1) rotate(0); opacity:1; } }
+  @keyframes rise { from { transform:translateY(30px); opacity:0; } to { transform:none; opacity:1; } }
+  @keyframes wiggle { 0%,100% { transform:rotate(0); } 25% { transform:rotate(-8deg) scale(1.05); } 75% { transform:rotate(8deg) scale(1.05); } }
+  /* 画面の見本（スマホの中身） */
+  .mock { margin-top:16px; background:#fff; color:#1f2937; border-radius:16px; padding:12px; width:min(78%, 300px); box-shadow:0 8px 24px rgba(0,0,0,.3); position:relative; font-size:14px; text-align:left; animation:rise .5s .3s ease-out both; }
+  .mock .lbl { font-size:11px; color:#6b7280; margin-bottom:3px; }
+  .mock .inp { border:1px solid #d1d5db; border-radius:8px; padding:8px; margin-bottom:8px; min-height:34px; }
+  .mock .btn { background:var(--green); color:#fff; border-radius:10px; padding:10px; text-align:center; font-weight:bold; }
+  .mock .chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; } .mock .chips span { border:1px solid #d1d5db; border-radius:12px; padding:3px 9px; font-size:12px; }
+  .mock .chips span.on { background:#2f6b2a; color:#fff; border-color:#2f6b2a; }
+  .mock .ok { background:#dcfce7; color:#15803d; border-radius:8px; padding:8px; font-weight:bold; text-align:center; }
+  .pin { display:flex; gap:8px; justify-content:center; margin:6px 0 10px; } .pin b { width:22px; height:22px; border-radius:50%; background:#2f6b2a; animation:pop .3s both; }
+  .finger { position:absolute; right:14px; bottom:-14px; font-size:42px; animation:tap 1.2s .8s ease-in-out infinite; }
+  @keyframes tap { 0%,100% { transform:translate(0,0); } 50% { transform:translate(-14px,-14px) scale(.9); } }
+  /* 操作 */
+  .zone { position:absolute; top:0; bottom:0; z-index:4; } .zl { left:0; width:30%; } .zr { right:0; width:70%; }
+  .side { position:absolute; right:10px; bottom:calc(120px + env(safe-area-inset-bottom)); z-index:6; display:flex; flex-direction:column; gap:14px; align-items:center; }
+  .side button { width:52px; height:52px; border-radius:50%; border:none; background:rgba(0,0,0,.45); color:#fff; font-size:24px; cursor:pointer; }
+  .side small { display:block; font-size:10px; margin-top:-8px; text-align:center; }
+  .cap { position:absolute; left:14px; right:80px; bottom:calc(24px + env(safe-area-inset-bottom)); z-index:5; font-size:13px; line-height:1.5; text-shadow:0 1px 3px rgba(0,0,0,.6); }
+  .cap b { font-size:15px; display:block; }
+  .next { position:absolute; left:0; right:0; bottom:calc(76px + env(safe-area-inset-bottom)); text-align:center; z-index:5; font-size:12px; opacity:.85; animation:rise 1s 1s both; }
+  .paused::after { content:"⏸"; position:absolute; inset:0; display:grid; place-items:center; font-size:80px; background:rgba(0,0,0,.25); z-index:4; pointer-events:none; }
+  #start { position:fixed; inset:0; z-index:20; background:rgba(0,0,0,.82); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:24px; }
+  #start .e { font-size:90px; animation:wiggle 1.4s infinite; }
+  #start h1 { margin:0; font-size:26px; }
+  #start p { margin:0; opacity:.85; line-height:1.6; }
+  #start button { margin-top:8px; font-size:20px; font-weight:bold; border:none; border-radius:999px; padding:16px 34px; background:var(--yellow); color:#111; cursor:pointer; }
+  .menu { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:min(86%, 340px); margin-top:14px; }
+  .menu a { background:rgba(255,255,255,.95); color:#111; text-decoration:none; border-radius:14px; padding:12px 8px; font-weight:bold; font-size:14px; }
+  .menu a span { display:block; font-size:28px; }
+</style>
+</head>
+<body>
+<div id="start">
+  <div class="e">🍍</div>
+  <h1>パイナップル<br>30秒でわかる動画</h1>
+  <p>上にスワイプで次の動画<br>右をタップで次へ・左をタップで戻る<br>まんなかを長押しでストップ</p>
+  <button type="button" id="go">▶ タップして見る（音あり）</button>
+  <p style="font-size:12px">音なしで見るときは、右の🔊を押してください</p>
+</div>
+<div id="feed"></div>
+
+<script>
+// ---------- 動画の中身（1本＝場面の並び。1場面およそ4秒） ----------
+const M = {
+  pin: () => `<div class="mock"><div class="lbl">PIN（6けた）</div><div class="pin">${Array.from({ length: 6 }, (_, i) => `<b style="animation-delay:${(0.4 + i * 0.15).toFixed(2)}s"></b>`).join('')}</div><div class="btn">ログイン</div><div class="finger">👆</div></div>`,
+  url: () => `<div class="mock"><div class="lbl">ブラウザで開く</div><div class="inp">🔒 dobopro-doboland.github.io/app/</div><div class="finger">👆</div></div>`,
+  home: () => `<div class="mock" style="text-align:center"><div style="font-size:44px">🍍</div><b>パイナップル</b><div class="lbl" style="margin-top:6px">ホーム画面のアイコン</div><div class="finger">👆</div></div>`,
+  date: () => `<div class="mock"><div class="lbl">活動日</div><div class="inp">📅 2026/10/15</div><div class="finger">👆</div></div>`,
+  chips: () => `<div class="mock"><div class="lbl">時間（分）</div><div class="inp">60</div><div class="chips"><span>15分</span><span>30分</span><span class="on">1時間</span><span>2時間</span></div><div class="finger">👆</div></div>`,
+  work: () => `<div class="mock"><div class="lbl">活動区分</div><div class="inp">資料作成 ▼</div><div class="lbl">活動内容</div><div class="inp">説明会の資料を作った</div><div class="lbl">成果物URL</div><div class="inp">https://…</div></div>`,
+  add: () => `<div class="mock"><div class="btn" style="background:#fff;color:#2f6b2a;border:2px solid #2f6b2a">＋ 活動日を追加</div><div class="finger">👆</div></div>`,
+  send: (t) => `<div class="mock"><div class="btn">${t}</div><div class="ok" style="margin-top:8px;animation:pop .4s 1.2s both">✅ 反映済</div><div class="finger">👆</div></div>`,
+  camera: () => `<div class="mock" style="text-align:center"><div class="lbl">領収書（写真）</div><div style="font-size:54px">📸🧾</div><div class="btn" style="margin-top:6px">写真を選ぶ</div><div class="finger">👆</div></div>`,
+  settle: () => `<div class="mock"><div class="lbl">精算方法（だれが払った？）</div><div class="chips"><span class="on">本人立替</span><span>社員立替</span><span>現地精算済み</span></div><div class="ok">💴 給与と一緒に振込</div></div>`,
+  edit: () => `<div class="mock"><div class="lbl">表示：稼働時間　月：10月</div><div class="inp">10/15　1h　資料作成</div><div class="chips"><span class="on">修正</span><span style="color:#b91c1c;border-color:#fca5a5">削除</span></div><div class="finger">👆</div></div>`,
+  kind: () => `<div class="mock"><div class="lbl">区分</div><div class="chips"><span>短期インターン生</span><span class="on">中期インターン生</span><span>その他</span></div><div class="ok">全額振込！</div></div>`,
+  id: () => `<div class="mock" style="text-align:center"><div class="lbl">申請番号</div><b style="font-size:17px">IT-20261015-123</b><div class="lbl" style="margin-top:6px">📸 スクショしておこう</div></div>`,
+  member: () => `<div class="mock"><div class="lbl">🔑 代理で入力するメンバー</div><div class="inp">🍖 大内海人 ▼</div><div class="finger">👆</div></div>`,
+  status: () => `<div class="mock"><div class="lbl">確認状態</div><div class="chips"><span>未確認</span><span class="on">領収書確認済</span><span>要確認</span><span>却下</span><span>精算済</span></div></div>`,
+};
+const VIDEOS = [
+  { id: 'login', title: 'ログインのしかた', ic: '🔑', bg: ['#ff9a3c', '#ff4f81'], scenes: [
+    ['🍍', 'パイナップルって<em>なに？</em>', '稼働時間・交通費・経費をスマホで申請するアプリ'],
+    ['🔗', 'リンクを<em>ひらく</em>', '管理者からもらったURLをタップ', 'url'],
+    ['🔢', '<em>6けたのPIN</em>をいれる', '入れたら「ログイン」', 'pin'],
+    ['📲', 'ホーム画面に<em>追加</em>', '次からはアイコンをタップするだけ', 'home'],
+    ['🤫', 'PINは<em>ひみつ</em>！', '忘れたら管理者に「再発行して」'],
+  ] },
+  { id: 'work', title: '稼働時間の申請', ic: '🕒', bg: ['#3ec5ff', '#5b5bff'], scenes: [
+    ['🕒', '稼働時間を<em>いれよう</em>', 'いちばんよく使うよ'],
+    ['📅', '活動日を<em>えらぶ</em>', '申請できるのは今月の分だけ', 'date'],
+    ['⏱️', '時間を<em>タップ</em>', '「1時間」などのボタンでもOK', 'chips'],
+    ['🏷️', '区分・内容・<em>URL</em>', '何のために何をしたか＋成果物のリンク', 'work'],
+    ['➕', '別の日も<em>まとめてOK</em>', '「＋ 活動日を追加」', 'add'],
+    ['✅', '<em>反映</em>をタップ', '「反映済」と出たら完了！', 'send', '給与タブへ反映'],
+  ] },
+  { id: 'genba', title: '現地活動費・SNS投稿', ic: '🚩', bg: ['#34d399', '#059669'], scenes: [
+    ['🚩', '現地に<em>いった日</em>は', '現地活動費を1日ずつ申請'],
+    ['✍️', 'その日に<em>したこと</em>', '「BBQ場の基礎工事」みたいに一言'],
+    ['📱', 'SNSは<em>1投稿＝1枚</em>', '投稿日・種類・内容をいれる'],
+    ['💰', '金額は<em>自動</em>で計算', '単価は管理者が月ごとに決めてるよ'],
+  ] },
+  { id: 'money', title: '交通費・経費の申請', ic: '💴', bg: ['#fbbf24', '#f97316'], scenes: [
+    ['🚃', '交通費＝<em>来るため</em>のお金', '現地に来るまでの電車・バスなど'],
+    ['🧾', '領収書の写真が<em>必須</em>！', '撮ってそのまま選べばOK', 'camera'],
+    ['💴', '経費＝<em>買ったもの</em>', 'PJと予算元（予算の大項目）をえらぶ'],
+    ['🙋', '自分で払ったら<em>本人立替</em>', '給与と一緒に振り込まれる', 'settle'],
+    ['🏢', '社員さんが払ったら<em>社員立替</em>', 'あなたへの振込はなし'],
+    ['➕', '何件でも<em>まとめて</em>送れる', '「＋ 追加」して最後に1回送信'],
+  ] },
+  { id: 'edit', title: 'まちがえたとき', ic: '✏️', bg: ['#a78bfa', '#7c3aed'], scenes: [
+    ['😱', '<em>まちがえた！</em>', 'だいじょうぶ、直せるよ'],
+    ['✏️', '「修正」タブを<em>ひらく</em>', '種類と月をえらぶ'],
+    ['🛠️', '<em>修正</em> or <em>削除</em>', '削除は2回タップで確定', 'edit'],
+    ['📆', '直せるのは<em>今月</em>だけ', '先月以前は管理者に連絡'],
+  ] },
+  { id: 'intern', title: 'インターン交通費の申請', ic: '🎓', bg: ['#f472b6', '#db2777'], scenes: [
+    ['🎓', 'インターン生の<em>交通費補助</em>', 'PINはいらないよ'],
+    ['🏷️', '区分を<em>えらぶ</em>', '中期・コンペ応募者は全額振込！', 'kind'],
+    ['🤝', '短期は<em>紹介</em>で割引', '紹介した人数で 30%・60%・90%…'],
+    ['🧾', '領収書<em>1枚ごと</em>に入力', 'どこから・どこまで・金額・写真'],
+    ['🔢', '<em>申請番号</em>をスクショ', '直す・取り消すときに使うよ', 'id'],
+    ['📅', '振込は<em>翌月15日</em>ごろ', '口座フォームの登録を忘れずに'],
+  ] },
+  { id: 'admin', title: '管理者：代理入力と毎月の確認', ic: '🛡️', bg: ['#64748b', '#0f172a'], scenes: [
+    ['🔑', '<em>管理者PIN</em>でログイン', 'メニュー「🔑 管理者PINを発行」で出す'],
+    ['👤', '代理で入力する<em>人をえらぶ</em>', 'あとは普通に申請・修正', 'member'],
+    ['🗓️', '<em>月の制限なし</em>', '交通費・経費は「月」だけでもOK'],
+    ['✅', 'ログで<em>確認状態</em>をえらぶ', '却下にすると給与から外れる', 'status'],
+    ['📊', '全体管理表で<em>振込額</em>チェック', '合計費用＝その月の振込額'],
+    ['💸', '振り込んだら<em>精算済</em>', 'インターンは④で振込状況を「振込済み」'],
+  ] },
+];
+const SCENE_MS = 4200;
+
+// ---------- 再生のしくみ ----------
+let SOUND = true, started = false;
+const feed = document.getElementById('feed');
+const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const plain = s => String(s).replace(/<[^>]+>/g, '');
+function speak(text) {
+  if (!SOUND || !started || !('speechSynthesis' in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP'; u.rate = 1.15; u.pitch = 1.15;
+    const v = speechSynthesis.getVoices().find(x => /ja/i.test(x.lang));
+    if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch (e) { /* 読み上げできない端末 */ }
+}
+class Player {
+  constructor(v, i) {
+    this.v = v; this.k = 0; this.timer = null; this.paused = false;
+    const el = this.el = document.createElement('section');
+    el.className = 'short'; el.id = v.id;
+    const nextV = VIDEOS[i + 1];
+    el.innerHTML = `<div class="card"><div class="bg"></div>
+      <div class="bars">${v.scenes.map(() => '<div class="bar"><i></i></div>').join('')}</div>
+      <div class="top"><span class="ic">${v.ic}</span><span class="ttl">${esc(v.title)}</span><span>${i + 1}/${VIDEOS.length}</span></div>
+      <div class="stage"></div>
+      <div class="zone zl"></div><div class="zone zr"></div>
+      <div class="side"><button type="button" class="snd">${SOUND ? '🔊' : '🔇'}</button><small>音</small><button type="button" class="rep">↺</button><small>最初から</small></div>
+      <div class="cap"><b>🍍 パイナップル公式</b>${esc(v.title)}｜30秒でわかる</div>
+      ${nextV ? `<div class="next">⬆ 上にスワイプで次：${esc(nextV.title)}</div>` : '<div class="next">これで全部！ 📖 マニュアルタブも見てね</div>'}
+    </div>`;
+    this.card = el.querySelector('.card');
+    this.stage = el.querySelector('.stage');
+    this.bars = [...el.querySelectorAll('.bar i')];
+    el.querySelector('.zl').onclick = () => this.go(this.k - 1);
+    el.querySelector('.zr').onclick = () => this.go(this.k + 1);
+    el.querySelector('.rep').onclick = () => this.go(0);
+    el.querySelector('.snd').onclick = () => { SOUND = !SOUND; document.querySelectorAll('.snd').forEach(b => { b.textContent = SOUND ? '🔊' : '🔇'; }); if (!SOUND) try { speechSynthesis.cancel(); } catch (e) { /* なし */ } else this.say(); };
+    let hold = null;
+    this.card.addEventListener('pointerdown', () => { hold = setTimeout(() => this.pause(true), 350); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => this.card.addEventListener(t, () => { clearTimeout(hold); if (this.paused) this.pause(false); }));
+  }
+  say() { const s = this.v.scenes[this.k]; speak(plain(s[1]) + '。' + plain(s[2])); }
+  render() {
+    const s = this.v.scenes[this.k], [c1, c2] = this.v.bg;
+    const ang = 150 + this.k * 25;
+    this.card.querySelector('.bg').style.background = `linear-gradient(${ang}deg, ${c1}, ${c2})`;
+    this.stage.innerHTML = `<div class="scene"><div class="emoji pop ${this.k === 0 ? 'wiggle' : ''}">${s[0]}</div><div class="big rise">${s[1]}</div><div class="sub rise2">${esc(s[2])}</div>${s[3] ? M[s[3]](s[4]) : ''}</div>`;
+    this.bars.forEach((b, i) => { b.style.transition = 'none'; b.style.width = i < this.k ? '100%' : '0'; });
+    const b = this.bars[this.k];
+    requestAnimationFrame(() => requestAnimationFrame(() => { b.style.transition = `width ${SCENE_MS}ms linear`; b.style.width = '100%'; }));
+    this.say();
+  }
+  go(k) {
+    clearTimeout(this.timer);
+    if (k < 0) k = 0;
+    if (k >= this.v.scenes.length) {   // 最後まで見たら次の動画へ
+      const n = this.el.nextElementSibling;
+      if (n) n.scrollIntoView({ behavior: 'smooth' }); else this.go(0);
+      return;
+    }
+    this.k = k; this.paused = false; this.card.classList.remove('paused');
+    this.render();
+    this.timer = setTimeout(() => this.go(this.k + 1), SCENE_MS);
+  }
+  pause(on) {
+    this.paused = on; this.card.classList.toggle('paused', on);
+    const b = this.bars[this.k];
+    if (on) { clearTimeout(this.timer); const w = getComputedStyle(b).width; b.style.transition = 'none'; b.style.width = w; try { speechSynthesis.pause(); } catch (e) { /* なし */ } }
+    else { b.style.transition = `width ${SCENE_MS / 2}ms linear`; b.style.width = '100%'; this.timer = setTimeout(() => this.go(this.k + 1), SCENE_MS / 2); try { speechSynthesis.resume(); } catch (e) { /* なし */ } }
+  }
+  stop() { clearTimeout(this.timer); }
+}
+const players = VIDEOS.map((v, i) => { const p = new Player(v, i); feed.appendChild(p.el); return p; });
+// 最後に動画の一覧
+const end = document.createElement('section');
+end.className = 'short'; end.id = 'list';
+end.innerHTML = `<div class="card"><div class="bg" style="background:linear-gradient(160deg,#2f6b2a,#111)"></div><div class="scene"><div class="emoji pop">🍍</div><div class="big rise">動画の<em>一覧</em></div>
+  <div class="menu">${VIDEOS.map(v => `<a href="#${v.id}"><span>${v.ic}</span>${esc(v.title)}</a>`).join('')}<a href="../app/"><span>🍍</span>アプリを開く</a></div></div></div>`;
+feed.appendChild(end);
+let current = null;
+/** いま画面に出ている動画 */
+const onScreen = () => players.find(p => Math.abs(p.el.getBoundingClientRect().top) < innerHeight / 2) || null;
+/** 画面に出ている動画だけを最初から再生（ほかは止める） */
+function playVisible() {
+  const p = onScreen();
+  players.forEach(x => { if (x !== p) x.stop(); });
+  if (!p) { current = null; try { speechSynthesis.cancel(); } catch (e) { /* なし */ } return; }
+  if (p !== current) { current = p; if (started) p.go(0); }
+}
+let st = null;
+feed.addEventListener('scroll', () => { clearTimeout(st); st = setTimeout(playVisible, 120); });
+function jump() { const id = location.hash.slice(1); const t = id && document.getElementById(id); if (t) t.scrollIntoView(); }
+window.addEventListener('hashchange', jump);
+document.getElementById('go').onclick = () => {
+  started = true;
+  document.getElementById('start').remove();
+  try { speechSynthesis.getVoices(); speak(' '); } catch (e) { /* なし */ }
+  jump();
+  setTimeout(() => { current = null; playVisible(); }, 200);
+};
+if (location.hash) jump();
+</script>
+</body></html>
