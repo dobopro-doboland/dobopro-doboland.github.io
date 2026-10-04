@@ -126,7 +126,7 @@
 
   <div class="field hidden" id="overBox"><label>振込金額を直接入力（管理者だけ・空欄なら自動計算）</label>
     <input id="payOverride" type="number" inputmode="numeric" min="0" step="1" placeholder="例）8000" oninput="refresh()">
-    <div class="note">入れた金額がそのまま振込予定額になります（割引率は自動計算しません）。</div></div>
+    <div class="note">入れた金額がそのまま振込予定額になります（割引率は自動計算しません）。直接入力のときは、交通費の金額・区間・領収書は空欄でもOKです。</div></div>
   <div class="sum" id="sumBox"></div>
 
   <label class="check" id="agreePrepaidBox"><input type="checkbox" id="agreePrepaid"><span>この交通費補助は<b>事前申告制</b>であることを理解しました。</span></label>
@@ -280,9 +280,11 @@ function validate(p) {
     if (need('referral') && p.referred.some(x => !x)) return 'あなたが紹介した人の名前をすべて入れてください';
     if (need('referral') && p.hasReferrer === 'いる' && (!p.referredByList.length || p.referredByList.some(x => !x))) return 'あなたを紹介した人の名前をすべて入れてください';
   }
-  if (!p.items.length) return '交通費を1つ以上入れてください';
+  const ov = p.payOverride !== '' && p.payOverride != null;   // 管理者が振込金額を直接入力 → 交通費の金額・区間・領収書はなくてもよい
+  if (!p.items.length && !ov) return '交通費を1つ以上入れてください';
   for (let i = 0; i < p.items.length; i++) {
     const x = p.items[i];
+    if (ov && !Number(x.amount)) continue;
     if (!ADM() && (!x.from || !x.to)) return `交通費 ${i + 1}：どこからどこまでかを入れてください`;   // 管理者は区間なしでもよい
     if (!(Number(x.amount) > 0)) return `交通費 ${i + 1}：金額を入れてください`;
     if (!ADM() && !x.fileEl.files[0] && !x.keepUrl) return `交通費 ${i + 1}：領収書をアップロードしてください`;
