@@ -44,6 +44,7 @@
   .rule { background:#fffbea; border:1px solid #f5d76e; border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.7; margin:8px 0 14px; }
   .rule table { border-collapse:collapse; margin:4px 0; }
   .rule td { padding:1px 10px 1px 0; }
+  .adm { background:#fef3c7; border:1px solid #f59e0b; border-radius:10px; padding:10px 12px; font-size:13px; margin:8px 0; }
   .field { margin-bottom:12px; }
   .req::after { content:" ＊必須"; color:var(--ng); font-size:11px; }
   .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -51,66 +52,64 @@
   .item .no { font-weight:bold; color:var(--brand); margin-bottom:6px; }
   .item .del { position:absolute; top:8px; right:10px; }
   .sum { border:2px solid var(--brand); border-radius:12px; padding:12px; margin:14px 0; background:#f3faf2; }
-  .sum div { display:flex; justify-content:space-between; padding:3px 0; }
+  .sum div { display:flex; justify-content:space-between; padding:3px 0; gap:8px; }
   .sum .pay { font-size:20px; font-weight:bold; color:var(--brand); border-top:1px dashed var(--line); margin-top:4px; padding-top:8px; }
   .check { display:flex; gap:10px; align-items:flex-start; background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px; margin-bottom:10px; font-size:14px; }
   .check input { width:22px; height:22px; flex:0 0 22px; margin-top:2px; }
   .msg { padding:10px; border-radius:8px; margin:10px 0; font-size:14px; }
   .msg.ng { background:#fde8e8; color:var(--ng); } .msg.ok { background:#e7f6ec; color:var(--ok); } .msg.warn { background:#fff4e5; color:var(--warn); }
   .confirm dt { font-size:12px; color:var(--muted); margin-top:8px; } .confirm dd { margin:2px 0 0; font-size:15px; white-space:pre-wrap; }
-  .hidden { display:none; }
+  .hidden { display:none !important; }
   .note { font-size:12px; color:var(--muted); }
 </style>
 </head>
 <body>
-<header><img src="../app/icon-192.png" alt=""><div><div class="t1">交通費補助の申請</div><div class="t2">短期・中期インターン生向け（パイナップル）</div></div></header>
+<header><img src="../app/icon-192.png" alt=""><div><div class="t1">交通費補助の申請</div><div class="t2">インターン生・コンペ応募者向け（パイナップル）</div></div></header>
 
+<div id="admBox" class="adm hidden">🔑 <b>管理者として代理で入力しています</b>（<span id="admName"></span>）。領収書・確認のチェックは任意、非表示の日程・区分も選べます。</div>
 <div id="msgTop"></div>
 
 <!-- 入力 -->
 <div id="formView">
   <div class="rule" id="ruleBox">
-    今回の交通費が支給されるのは、説明会で話したとおり<b>友達を紹介した人のみ</b>です。紹介した人数に応じて交通費が割り引かれ、割り引いた分が支給（振込）されます。<b>紹介された側も<span id="refRate">30</span>%引き</b>です。
+    交通費は区分によって支給のしかたが変わります。<br>
+    <b id="fullText">中期インターン生・コンペ応募者</b>：交通費の<b>全額</b>を振込。<br>
+    <b>短期インターン生</b>：友達を紹介した人・紹介された人だけが対象。紹介した人数に応じて割り引かれ、割り引いた分が振込されます。
     <table id="rateTable"></table>
-    例）2人紹介：10,000円 → 自己負担4,000円（6,000円を支給）
+    <span id="refRule"><b>紹介された人</b>は1人分として数えます（紹介されただけ→30%、紹介されて1人紹介→60%、2人紹介→90%）。</span><br>
+    振込予定日：<b>申請した翌月の15日</b>（土日・祝日の場合は前後します）
   </div>
 
   <div class="field"><label class="req">区分</label>
     <select id="kind"><option value="">選択</option></select></div>
   <div class="field hidden" id="kindDetailBox"><label class="req">「その他」の分類</label>
-    <select id="kindDetail"><option value="">選択</option></select>
-    <div class="note" id="kindDetailNote"></div></div>
+    <select id="kindDetail"><option value="">選択</option></select></div>
   <div class="row2">
     <div class="field"><label class="req">姓</label><input id="sei" autocomplete="family-name" placeholder="例）山田"></div>
     <div class="field"><label class="req">名</label><input id="mei" autocomplete="given-name" placeholder="例）花子"></div>
   </div>
-  <div class="field"><label class="req">学校名</label><input id="school" placeholder="例）〇〇大学"></div>
+  <div class="field" id="schoolBox"><label class="req" id="schoolLbl">学校名</label><input id="school" placeholder="例）〇〇大学"></div>
   <div class="field"><label class="req">日程</label><select id="schedule"><option value="">選択</option></select></div>
 
-  <div class="field"><label class="req">あなたが紹介した人数</label>
-    <select id="referCount"></select></div>
-  <div id="referredBox"></div>
-  <div class="field"><label class="req">あなたを紹介した人はいますか</label>
-    <select id="hasReferrer"><option value="">選択</option><option>いる</option><option>いない</option></select></div>
-  <div class="field hidden" id="referrerCountBox"><label class="req">あなたを紹介した人の人数</label><select id="referrerCount"></select></div>
-  <div id="referrerBox"></div>
+  <div id="refBox">
+    <div class="field"><label class="req">あなたが紹介した人数</label><select id="referCount"></select></div>
+    <div id="referredBox"></div>
+    <div class="field"><label class="req">あなたを紹介した人はいますか</label>
+      <select id="hasReferrer"><option value="">選択</option><option>いる</option><option>いない</option></select></div>
+    <div class="field hidden" id="referrerCountBox"><label class="req">あなたを紹介した人の人数</label><select id="referrerCount"></select></div>
+    <div id="referrerBox"></div>
+  </div>
+  <div id="fullNote" class="msg ok hidden">この区分は交通費の<b>全額</b>が振込されます（紹介の質問はありません）。</div>
 
   <h2>交通費（領収書1枚ごとに入力）</h2>
   <p class="note">区間は「どこから」「どこまで」の地名・駅名だけを書いてください。領収書は1枚ずつ必ずアップロードしてください。</p>
   <div id="items"></div>
   <button class="btn sub" type="button" onclick="addItem()">＋ 交通費を追加</button>
 
-  <div class="sum" id="sumBox">
-    <div><span>交通費の合計</span><span id="sTotal">0円</span></div>
-    <div><span>割引率（紹介 <span id="sCount">0</span>人）</span><span id="sRate">0%</span></div>
-    <div><span>割り引かれる金額</span><span id="sDisc">0円</span></div>
-    <div><span>あなたの負担</span><span id="sSelf">0円</span></div>
-    <div class="pay"><span>振込予定額</span><span id="sPay">0円</span></div>
-    <div class="note" id="sNote" style="display:block"></div>
-  </div>
+  <div class="sum" id="sumBox"></div>
 
-  <label class="check"><input type="checkbox" id="agreePrepaid"><span>この交通費補助は<b>事前申告制</b>であることを理解しました。</span></label>
-  <label class="check"><input type="checkbox" id="agreeBank"><span>振込先の<b>銀行口座フォーム</b>（<a id="bankLink" href="#" target="_blank" rel="noopener">こちら</a>）に登録しないと<b>振り込まれない</b>ことを理解しました。</span></label>
+  <label class="check" id="agreePrepaidBox"><input type="checkbox" id="agreePrepaid"><span>この交通費補助は<b>事前申告制</b>であることを理解しました。</span></label>
+  <label class="check" id="agreeBankBox"><input type="checkbox" id="agreeBank"><span>振込先の<b>銀行口座フォーム</b>（<a id="bankLink" href="#" target="_blank" rel="noopener">こちら</a>）に登録しないと<b>振り込まれない</b>ことを理解しました。</span></label>
 
   <div id="msgForm"></div>
   <button class="btn" style="width:100%" type="button" onclick="toConfirm()">確認画面へ</button>
@@ -138,32 +137,55 @@ const API = 'https://script.google.com/macros/s/AKfycbwgDYCaeTYSSm5ozOPx-EK_5JuK
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const yen = n => Number(n || 0).toLocaleString() + '円';
-let INIT = null, nItem = 0;
+const WD = ['日', '月', '火', '水', '木', '金', '土'];
+let INIT = null;
+// パイナップルに管理者でログインしているときは代理入力（同じサイトの保存データを使う）
+let AUTH = null;
+try { const a = JSON.parse(localStorage.getItem('pineapple_auth') || 'null'); if (a && a.admin && a.token) AUTH = a; } catch (e) { AUTH = null; }
+const ADM = () => !!(INIT && INIT.admin);
 const msg = (id, cls, text) => { $(id).innerHTML = text ? `<div class="msg ${cls}">${text}</div>` : ''; };
 async function post(body) {
+  if (AUTH) body.token = AUTH.token;
   const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
   if (!r.ok) throw new Error('通信エラー（' + r.status + '）');
   const j = await r.json();
   if (!j.ok) throw new Error(j.error);
   return j.data;
 }
-/** あなたを紹介した人（いる場合だけ。名前は「、」でまとめる） */
-const referredByNames = () => $('hasReferrer').value === 'いる' ? [...document.querySelectorAll('.byName')].map(e => e.value.trim()) : [];
-const referredByText = () => referredByNames().filter(Boolean).join('、');
-const isReferred = () => $('hasReferrer').value === 'いる' && referredByNames().some(Boolean);
+const F = id => ((INIT && INIT.fields) || {})[id] || { show: true, req: true, label: '' };
+const need = id => !ADM() && F(id).show && F(id).req;
+/** 振込予定日：申請した翌月の15日 */
+function payDate() { const d = new Date(); const p = new Date(d.getFullYear(), d.getMonth() + 1, 15); return `${p.getFullYear()}年${p.getMonth() + 1}月15日（${WD[p.getDay()]}）`; }
+/** 全額支給の区分か（中期インターン生・橋梁コンペ応募者・駅舎リノベコンペ応募者など） */
+function isFull() {
+  if (!INIT) return false;
+  const k = $('kind').value, d = $('kindDetail').value;
+  return (INIT.fullKinds || []).includes(k) || (k === 'その他' && (INIT.fullKinds || []).includes(d));
+}
+const askRef = () => !!$('kind').value && !isFull() && F('referral').show;
+const isReferred = () => askRef() && $('hasReferrer').value === 'いる';
+const referredByNames = () => isReferred() ? [...document.querySelectorAll('.byName')].map(e => e.value.trim()) : [];
 function renderReferrer() {
   const on = $('hasReferrer').value === 'いる';
   $('referrerCountBox').classList.toggle('hidden', !on);
   const n = on ? Number($('referrerCount').value) || 1 : 0;
   const old = [...document.querySelectorAll('.byName')].map(e => e.value);
   let h = '';
-  for (let i = 0; i < n; i++) h += `<div class="field"><label class="req">あなたを紹介した人の名前${n > 1 ? `（${i + 1}人目）` : ''}</label><input class="byName" value="${esc(old[i] || '')}" placeholder="例）佐藤太郎" oninput="refresh()"></div>`;
+  for (let i = 0; i < n; i++) h += `<div class="field"><label class="${need('referral') ? 'req' : ''}">あなたを紹介した人の名前${n > 1 ? `（${i + 1}人目）` : ''}</label><input class="byName" value="${esc(old[i] || '')}" placeholder="例）佐藤太郎"></div>`;
   $('referrerBox').innerHTML = h;
   refresh();
 }
-const isFull = () => $('kind').value === 'その他' && INIT && (INIT.fullSubs || []).includes($('kindDetail').value);
+function renderReferred() {
+  const n = Number($('referCount').value) || 0;
+  const old = [...document.querySelectorAll('.refName')].map(e => e.value);
+  let h = '';
+  for (let i = 0; i < n; i++) h += `<div class="field"><label class="${need('referral') ? 'req' : ''}">あなたが紹介した人の名前（${i + 1}人目）</label><input class="refName" value="${esc(old[i] || '')}" placeholder="例）鈴木一郎"></div>`;
+  $('referredBox').innerHTML = h;
+  refresh();
+}
 function rateOf(count) {
-  if (isFull()) return 1;   // コンペ応募者などは全額支給
+  if (isFull()) return 1;
+  if (!askRef()) return 0;
   let n = Math.max(0, Number(count) || 0);
   const referred = isReferred(), modes = INIT.referredModes || [];
   if (referred && INIT.referred === modes[1]) n++;
@@ -172,51 +194,47 @@ function rateOf(count) {
   return Math.min(1, r);
 }
 function calc() {
-  const amounts = [...document.querySelectorAll('.item .amount')].map(e => Math.round(Number(e.value) || 0));
-  const total = amounts.reduce((s, x) => s + x, 0);
-  const count = Number($('referCount').value) || 0;
+  const total = [...document.querySelectorAll('.item .amount')].reduce((s, e) => s + Math.round(Number(e.value) || 0), 0);
+  const count = askRef() ? Number($('referCount').value) || 0 : 0;
   const rate = INIT ? rateOf(count) : 0;
   const pay = Math.ceil(Math.round(total * rate * 1e6) / 1e6);
-  return { total, rate, pay, self: total - pay, count };
+  return { total, rate, pay, self: total - pay, count, referred: isReferred(), full: isFull() };
+}
+function sumHtml(c, pd) {
+  const why = c.full ? '全額支給' : `紹介 ${c.count}人${c.referred ? '＋紹介された' : ''}`;
+  return `<div><span>交通費の合計</span><span>${yen(c.total)}</span></div><div><span>支給率（${why}）</span><span>${Math.round(c.rate * 100)}%</span></div>
+    <div><span>あなたの負担</span><span>${yen(c.self)}</span></div>
+    <div class="pay"><span>振込予定額</span><span>${yen(c.pay)}</span></div>
+    <div><span>振込予定日</span><span>${esc(pd || payDate())}</span></div>
+    <div class="note" style="display:block">振込日は土日・祝日の場合は前後します。1円未満は切り上げ。最終的な振込額は管理者の確認後に決まります。</div>`;
 }
 function refresh() {
+  const full = isFull(), ask = askRef();
+  $('refBox').classList.toggle('hidden', !ask);
+  $('fullNote').classList.toggle('hidden', !full);
+  $('kindDetailBox').classList.toggle('hidden', $('kind').value !== 'その他');
   const c = calc();
-  $('sTotal').textContent = yen(c.total); $('sCount').textContent = c.count; $('sRate').textContent = Math.round(c.rate * 100) + '%' + (isReferred() ? '（紹介された分を含む）' : '');
-  $('sDisc').textContent = yen(c.pay); $('sSelf').textContent = yen(c.self); $('sPay').textContent = yen(c.pay);
-  const notes = [];
-  const modes = (INIT && INIT.referredModes) || [];
-  if (isFull()) notes.push(`${$('kindDetail').value}は交通費の全額を支給します。`);
-  else if (!c.count && !isReferred()) notes.push('友達を紹介した人・紹介された人だけが対象です（どちらもないときは支給されません）。');
-  if (isReferred() && INIT && INIT.referred === modes[2]) notes.push('紹介された側の割引は、管理者が確認してから決まります（この画面の金額には入っていません）。');
-  notes.push('1円未満は切り上げ。最終的な振込額は管理者の確認後に決まります。');
-  $('sNote').textContent = notes.join(' ');
-}
-function renderReferred() {
-  const n = Number($('referCount').value) || 0;
-  const old = [...document.querySelectorAll('.refName')].map(e => e.value);
-  let h = '';
-  for (let i = 0; i < n; i++) h += `<div class="field"><label class="req">あなたが紹介した人の名前（${i + 1}人目）</label><input class="refName" value="${esc(old[i] || '')}" placeholder="例）鈴木一郎"></div>`;
-  $('referredBox').innerHTML = h;
-  refresh();
+  $('sumBox').innerHTML = sumHtml(c) + (!full && ask && !c.count && !c.referred && c.total ? '<div class="note" style="display:block;color:var(--ng)">紹介した人・紹介された人のどちらでもないときは支給されません。</div>' : '');
 }
 function addItem() {
-  nItem++;
   const d = document.createElement('div');
   d.className = 'item';
   d.innerHTML = `<div class="no"></div><button type="button" class="btn sub del" onclick="this.parentNode.remove(); renumber(); refresh();" style="padding:4px 10px;font-size:13px">削除</button>
     <div class="row2"><div class="field"><label class="req">どこから</label><input class="from" placeholder="例）名古屋駅"></div>
     <div class="field"><label class="req">どこまで</label><input class="to" placeholder="例）東京駅"></div></div>
     <div class="field"><label class="req">金額（円）</label><input class="amount" type="number" inputmode="numeric" min="1" step="1" placeholder="例）10000" oninput="refresh()"></div>
-    <div class="field"><label class="req">領収書（写真またはPDF）</label><input class="file" type="file" accept="image/*,application/pdf"></div>`;
+    <div class="field"><label class="${ADM() ? '' : 'req'}">領収書（写真またはPDF）</label><input class="file" type="file" accept="image/*,application/pdf"></div>`;
   $('items').appendChild(d);
   renumber(); refresh();
 }
 function renumber() { [...document.querySelectorAll('.item')].forEach((e, i) => { e.querySelector('.no').textContent = `交通費 ${i + 1}`; e.querySelector('.del').style.display = document.querySelectorAll('.item').length > 1 ? '' : 'none'; }); }
 function gather() {
   const items = [...document.querySelectorAll('.item')].map(e => ({ from: e.querySelector('.from').value.trim(), to: e.querySelector('.to').value.trim(), amount: e.querySelector('.amount').value, fileEl: e.querySelector('.file') }));
+  const ask = askRef();
   return {
     kind: $('kind').value, kindDetail: $('kind').value === 'その他' ? $('kindDetail').value : '', sei: $('sei').value.replace(/[\s　]+/g, ''), mei: $('mei').value.replace(/[\s　]+/g, ''), school: $('school').value.trim(), schedule: $('schedule').value,
-    referCount: Number($('referCount').value) || 0, hasReferrer: $('hasReferrer').value, referredBy: referredByText(), referredByList: referredByNames(), referred: [...document.querySelectorAll('.refName')].map(e => e.value.trim()),
+    referCount: ask ? Number($('referCount').value) || 0 : 0, hasReferrer: ask ? $('hasReferrer').value : '', referredByList: referredByNames(), referredBy: referredByNames().filter(Boolean).join('、'),
+    referred: ask ? [...document.querySelectorAll('.refName')].map(e => e.value.trim()) : [],
     items, agreePrepaid: $('agreePrepaid').checked, agreeBank: $('agreeBank').checked,
   };
 }
@@ -224,38 +242,36 @@ function validate(p) {
   if (!p.kind) return '区分を選んでください';
   if (p.kind === 'その他' && !p.kindDetail) return '「その他」の分類を選んでください';
   if (!p.sei || !p.mei) return '姓と名を入れてください';
-  if (!p.school) return '学校名を入れてください';
+  if (need('school') && !p.school) return '学校名を入れてください';
   if (!p.schedule) return '日程を選んでください';
-  if (p.referred.some(x => !x)) return 'あなたが紹介した人の名前をすべて入れてください';
-  if (!p.hasReferrer) return 'あなたを紹介した人がいるかどうかを選んでください';
-  if (p.hasReferrer === 'いる' && (!p.referredByList.length || p.referredByList.some(x => !x))) return 'あなたを紹介した人の名前をすべて入れてください';
+  if (askRef()) {
+    if (!ADM() && !p.hasReferrer) return 'あなたを紹介した人がいるかどうかを選んでください';
+    if (need('referral') && p.referred.some(x => !x)) return 'あなたが紹介した人の名前をすべて入れてください';
+    if (need('referral') && p.hasReferrer === 'いる' && (!p.referredByList.length || p.referredByList.some(x => !x))) return 'あなたを紹介した人の名前をすべて入れてください';
+  }
   if (!p.items.length) return '交通費を1つ以上入れてください';
   for (let i = 0; i < p.items.length; i++) {
     const x = p.items[i];
     if (!x.from || !x.to) return `交通費 ${i + 1}：どこからどこまでかを入れてください`;
     if (!(Number(x.amount) > 0)) return `交通費 ${i + 1}：金額を入れてください`;
-    if (!x.fileEl.files[0]) return `交通費 ${i + 1}：領収書をアップロードしてください`;
-    if (!/^(image\/|application\/pdf)/.test(x.fileEl.files[0].type)) return `交通費 ${i + 1}：領収書は写真かPDFにしてください`;
+    if (!ADM() && !x.fileEl.files[0]) return `交通費 ${i + 1}：領収書をアップロードしてください`;
+    if (x.fileEl.files[0] && !/^(image\/|application\/pdf)/.test(x.fileEl.files[0].type)) return `交通費 ${i + 1}：領収書は写真かPDFにしてください`;
   }
-  if (!p.agreePrepaid) return '事前申告制の確認にチェックしてください';
-  if (!p.agreeBank) return '銀行口座フォームの確認にチェックしてください';
+  if (need('agreePrepaid') && !p.agreePrepaid) return '事前申告制の確認にチェックしてください';
+  if (need('agreeBank') && !p.agreeBank) return '銀行口座フォームの確認にチェックしてください';
   return '';
-}
-function sumHtml(c) {
-  return `<div><span>交通費の合計</span><span>${yen(c.total)}</span></div><div><span>割引率（紹介 ${c.count}人）</span><span>${Math.round(c.rate * 100)}%</span></div>
-    <div><span>割り引かれる金額</span><span>${yen(c.pay)}</span></div><div><span>あなたの負担</span><span>${yen(c.self)}</span></div>
-    <div class="pay"><span>振込予定額</span><span>${yen(c.pay)}</span></div>`;
 }
 function toConfirm() {
   const p = gather(), e = validate(p);
-  if (e) return msg('msgForm', 'ng', e);
+  if (e) return msg('msgForm', 'ng', esc(e));
   msg('msgForm');
-  const c = calc();
-  const rows = [['区分', p.kind + (p.kindDetail ? `（${p.kindDetail}）` : '')], ['氏名', p.sei + p.mei], ['学校名', p.school], ['日程', p.schedule], ['あなたが紹介した人数', p.referCount + '人'],
-    ['あなたが紹介した人', p.referred.join('、') || '—'], ['あなたを紹介した人', p.hasReferrer === 'いる' ? p.referredBy : 'いない'],
-    ['交通費', p.items.map((x, i) => `${i + 1}. ${x.from} → ${x.to}　${yen(x.amount)}（領収書：${x.fileEl.files[0].name}）`).join('\n')]];
+  const rows = [['区分', p.kind + (p.kindDetail ? `（${p.kindDetail}）` : '')], ['氏名', p.sei + p.mei]];
+  if (F('school').show) rows.push(['学校名', p.school || '—']);
+  rows.push(['日程', p.schedule]);
+  if (askRef()) rows.push(['あなたが紹介した人数', p.referCount + '人'], ['あなたが紹介した人', p.referred.filter(Boolean).join('、') || '—'], ['あなたを紹介した人', p.hasReferrer === 'いる' ? (p.referredBy || 'いる') : 'いない']);
+  rows.push(['交通費', p.items.map((x, i) => `${i + 1}. ${x.from} → ${x.to}　${yen(x.amount)}（領収書：${x.fileEl.files[0] ? x.fileEl.files[0].name : 'なし'}）`).join('\n')]);
   $('confirmList').innerHTML = rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
-  $('confirmSum').innerHTML = sumHtml(c);
+  $('confirmSum').innerHTML = sumHtml(calc());
   $('formView').classList.add('hidden'); $('confirmView').classList.remove('hidden'); window.scrollTo(0, 0);
 }
 function back() { $('confirmView').classList.add('hidden'); $('formView').classList.remove('hidden'); }
@@ -271,21 +287,23 @@ async function shrink(file) {
   } catch (e) { return null; }
 }
 async function readFile(f) {
+  if (!f) return null;
   const small = await shrink(f), src = small || f;
   if (src.size > 10 * 1024 * 1024) throw new Error('領収書のファイルが10MBを超えています');
   return new Promise((ok, ng) => { const rd = new FileReader(); rd.onload = () => ok({ name: small ? f.name.replace(/\.\w+$/, '') + '.jpg' : f.name, mime: small ? 'image/jpeg' : f.type, data: String(rd.result).split(',')[1] }); rd.onerror = () => ng(new Error('領収書を読み込めませんでした')); rd.readAsDataURL(src); });
 }
 async function send() {
   const p = gather(), e = validate(p);
-  if (e) { back(); return msg('msgForm', 'ng', e); }
+  if (e) { back(); return msg('msgForm', 'ng', esc(e)); }
   $('sendBtn').disabled = true; msg('msgConfirm', 'warn', '送信しています…（領収書の枚数によって少し時間がかかります）');
   try {
     const items = [];
     for (const x of p.items) items.push({ from: x.from, to: x.to, amount: Number(x.amount), file: await readFile(x.fileEl.files[0]) });
     const payload = Object.assign({}, p, { items });
     const r = await post({ action: 'internSubmit', payload });
+    const pd = r.payDate ? (() => { const d = new Date(r.payDate + 'T00:00'); return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`; })() : '';
     $('doneSum').innerHTML = `<div><span>申請番号</span><span>${esc(r.id)}</span></div><div><span>氏名</span><span>${esc(r.name)}</span></div><div><span>日程</span><span>${esc(r.schedule)}</span></div>` +
-      sumHtml({ total: r.total, rate: r.rate, pay: r.pay, self: r.self, count: p.referCount }) + (r.referredPending ? '<div class="note" style="display:block">紹介された側の割引は、管理者が確認してから決まります。</div>' : '');
+      sumHtml({ total: r.total, rate: r.rate, pay: r.pay, self: r.self, count: p.referCount, referred: p.hasReferrer === 'いる', full: r.full }, pd) + (r.referredPending ? '<div class="note" style="display:block">紹介された側の割引は、管理者が確認してから決まります。</div>' : '');
     $('confirmView').classList.add('hidden'); $('doneView').classList.remove('hidden'); window.scrollTo(0, 0);
   } catch (err) {
     msg('msgConfirm', 'ng', err.message === 'Failed to fetch' ? '通信できませんでした。電波のよい所でもう一度送信してください' : esc(err.message));
@@ -294,22 +312,29 @@ async function send() {
 }
 (async () => {
   for (let i = 0; i <= 10; i++) $('referCount').insertAdjacentHTML('beforeend', `<option value="${i}">${i}人</option>`);
-  $('referCount').onchange = renderReferred;
   for (let i = 1; i <= 5; i++) $('referrerCount').insertAdjacentHTML('beforeend', `<option value="${i}">${i}人</option>`);
+  $('referCount').onchange = renderReferred;
   $('hasReferrer').onchange = renderReferrer;
   $('referrerCount').onchange = renderReferrer;
-  addItem();
+  $('kind').onchange = refresh;
+  $('kindDetail').onchange = refresh;
   msg('msgTop', 'warn', '読み込み中…');
   try {
     INIT = await post({ action: 'internInit' });
+    if (ADM()) { $('admBox').classList.remove('hidden'); $('admName').textContent = AUTH.name; }
     INIT.kinds.forEach(k => $('kind').insertAdjacentHTML('beforeend', `<option>${esc(k)}</option>`));
     (INIT.otherSubs || []).forEach(k => $('kindDetail').insertAdjacentHTML('beforeend', `<option>${esc(k)}</option>`));
-    $('kind').onchange = () => { $('kindDetailBox').classList.toggle('hidden', $('kind').value !== 'その他'); refresh(); };
-    $('kindDetail').onchange = () => { $('kindDetailNote').textContent = isFull() ? '交通費の全額が支給されます。' : ''; refresh(); };
-    INIT.schedules.forEach(s => $('schedule').insertAdjacentHTML('beforeend', `<option>${esc(s.name)}</option>`));
-    $('rateTable').innerHTML = INIT.rates.filter(x => x.count > 0).map(x => `<tr><td>${x.count}人目${x.count === Math.max(...INIT.rates.map(y => y.count)) ? '以上' : ''}</td><td>→ ${Math.round(x.rate * 100)}%オフ</td></tr>`).join('');
-    $('refRate').textContent = Math.round((Number(INIT.referredRate) || 0) * 100);
+    INIT.schedules.forEach(s => $('schedule').insertAdjacentHTML('beforeend', `<option value="${esc(s.name)}">${esc(s.name)}${s.hidden ? '（非表示の日程）' : ''}</option>`));
+    $('fullText').textContent = (INIT.fullKinds || []).join('・') || '（なし）';
+    $('rateTable').innerHTML = INIT.rates.filter(x => x.count > 0).map(x => `<tr><td>${x.count}人紹介${x.count === Math.max(...INIT.rates.map(y => y.count)) ? '以上' : ''}</td><td>→ ${Math.round(x.rate * 100)}%オフ</td></tr>`).join('');
+    const md = INIT.referredModes || [], rr = Math.round((Number(INIT.referredRate) || 0) * 100);
+    $('refRule').innerHTML = INIT.referred === md[0] ? `<b>紹介された人</b>は${rr}%引き（紹介した人数の割引と大きい方）。` : INIT.referred === md[2] ? '<b>紹介された人</b>の割引は管理者が確認してから決まります。' : $('refRule').innerHTML;
+    // 申請画面の項目（管理タブの設定で表示／非表示・必須／任意）
+    $('schoolBox').classList.toggle('hidden', !F('school').show); $('schoolLbl').className = need('school') ? 'req' : '';
+    $('agreePrepaidBox').classList.toggle('hidden', !F('agreePrepaid').show);
+    $('agreeBankBox').classList.toggle('hidden', !F('agreeBank').show);
     $('bankLink').href = INIT.bankUrl; $('bankLink2').href = INIT.bankUrl;
+    addItem();
     msg('msgTop'); refresh();
   } catch (e) { msg('msgTop', 'ng', '読み込めませんでした：' + esc(e.message)); }
 })();
