@@ -1,5 +1,5 @@
-// パイナップル：アプリ本体だけをキャッシュ（申請データは通さない）。版 202610031333
-const CACHE = 'pineapple-202610031333';
+// パイナップル：アプリ本体だけをキャッシュ（申請データは通さない）。版 202610032354
+const CACHE = 'pineapple-202610032354';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
