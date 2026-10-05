@@ -32,6 +32,9 @@
 </style>
 
 <style>
+  /* 金額の欄：上下の矢印（1円ずつ増減）を出さない */
+  .yen::-webkit-outer-spin-button, .yen::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  .yen { -moz-appearance:textfield; appearance:textfield; }
   html:root { --brand:#2f6b2a; --accent:#f5b700; }
   body { padding:0 14px calc(24px + env(safe-area-inset-bottom)); font-size:15px; max-width:640px; margin:0 auto; }
   input, select, textarea { font-size:16px; padding:10px; }
@@ -125,7 +128,7 @@
   <button class="btn sub" type="button" onclick="addItem()">＋ 交通費を追加</button>
 
   <div class="field hidden" id="overBox"><label>振込金額を直接入力（管理者だけ・空欄なら自動計算）</label>
-    <input id="payOverride" type="number" inputmode="numeric" min="0" step="1" placeholder="例）8000" oninput="refresh()">
+    <input id="payOverride" class="yen" type="number" inputmode="numeric" min="0" step="1" placeholder="例）8000" oninput="refresh()">
     <div class="note">入れた金額がそのまま振込予定額になります（割引率は自動計算しません）。直接入力のときは、交通費の金額・区間・領収書は空欄でもOKです。</div></div>
   <div class="sum" id="sumBox"></div>
 
@@ -154,7 +157,7 @@
   <button class="btn sub" type="button" onclick="location.reload()">別の申請をする</button>
 </div>
 
-<div style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.05</span><span id="verWarn"></span><br><a href="../manual/#intern" target="_blank" rel="noopener">🎬 申請のしかた（30秒動画）</a></div>
+<div style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.06</span><span id="verWarn"></span><br><a href="../manual/#intern" target="_blank" rel="noopener">🎬 申請のしかた（30秒動画）</a></div>
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbwgDYCaeTYSSm5ozOPx-EK_5JuKouHXV1BlTihzQcA9dxEnI6AVZTv3668xHtgGQ9skCg/exec';
@@ -250,7 +253,7 @@ function addItem(v) {
   d.innerHTML = `<div class="no"></div><button type="button" class="btn sub del" onclick="this.parentNode.remove(); renumber(); refresh();" style="padding:4px 10px;font-size:13px">削除</button>
     <div class="row2"><div class="field"><label class="${ADM() ? '' : 'req'}">どこから</label><input class="from" placeholder="例）名古屋駅"></div>
     <div class="field"><label class="${ADM() ? '' : 'req'}">どこまで</label><input class="to" placeholder="例）東京駅"></div></div>
-    <div class="field"><label class="req">金額（円）</label><input class="amount" type="number" inputmode="numeric" min="1" step="1" placeholder="例）10000" oninput="refresh()"></div>
+    <div class="field"><label class="req">金額（円）</label><input class="amount yen" type="number" inputmode="numeric" min="1" step="1" placeholder="例）10000" oninput="refresh()"></div>
     <div class="field"><label class="${ADM() || v.url ? '' : 'req'}">領収書（写真またはPDF）${v.url ? `<span class="note">（登録済み：<a href="${esc(v.url)}" target="_blank" rel="noopener">見る</a>。変えるときだけ選ぶ）</span>` : ''}</label><input class="file" type="file" accept="image/*,application/pdf"></div>`;
   $('items').appendChild(d);
   if (v.from) d.querySelector('.from').value = v.from;
@@ -421,5 +424,8 @@ async function delApp(btn) {
     msg('msgTop'); refresh();
   } catch (e) { msg('msgTop', 'ng', '読み込めませんでした：' + esc(e.message)); }
 })();
+// 金額の欄：マウスホイール・上下キーで1円ずつ変わらないようにする
+document.addEventListener('wheel', e => { const t = e.target; if (t.classList && t.classList.contains('yen') && t === document.activeElement) t.blur(); }, { passive: true });
+document.addEventListener('keydown', e => { if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.target.classList && e.target.classList.contains('yen')) e.preventDefault(); });
 </script>
 </body></html>
