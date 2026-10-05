@@ -187,6 +187,7 @@
   <div class="pane" id="p-genba">
     <div class="edit-banner" id="gEdit">✏️ 現地活動費を修正中です（1日分）。<button class="mini" onclick="cancelAllowEdit('genba')">修正をやめる</button></div>
     <p class="hint"><span id="genbaPrice">現地で活動した日は1日3,000円です。</span>何日分でもまとめて申請できます。</p>
+    <div class="row"><label>地域</label><select id="gRegion" onchange="genbaPrice();genbaSum()"><option>千葉</option><option>和歌山</option></select></div>
     <div id="gDays"></div>
     <div class="bar"><button class="btn sub" type="button" id="gAdd" onclick="addGenbaDay()">＋ 日を追加（次の日）</button><span class="total" id="gTotal"></span></div>
     <div class="bar"><span></span><button class="btn" id="gSubmit" onclick="sendAllowance('genba')">現地活動費を申請</button></div>
@@ -238,7 +239,7 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.08</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.09</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -369,7 +370,11 @@ function readExtras(root, errs, tag) {
   }).filter(x => x.a);
 }
 /** 月ごとの単価 */
-const genbaUnit = d => ((INIT.allow && INIT.allow.genba) || [])[fyIdx(d || today())] || INIT.genbaUnit || 3000;
+const genbaRegion = () => ($('gRegion') && $('gRegion').value) || '千葉';
+const genbaUnit = d => (((INIT.allow && INIT.allow.genbaRegions && INIT.allow.genbaRegions[genbaRegion()]) || (INIT.allow && INIT.allow.genba) || [])[fyIdx(d || today())]) || INIT.genbaUnit || 3000;
+/** 地域の初期値：和歌山PJのメンバーは和歌山、ほかは千葉 */
+function setGenbaRegion(v) { const me = INIT.members.find(m => m.name === member()); if ($('gRegion')) $('gRegion').value = v || (me && me.pj === '和歌山' ? '和歌山' : '千葉'); genbaPrice(); genbaSum(); }
+function genbaPrice() { if ($('genbaPrice')) $('genbaPrice').textContent = `${genbaRegion()}で活動した日は1日${Number(genbaUnit()).toLocaleString()}円です（地域・月によって変わります）。`; }
 const snsKinds = d => (INIT.allow && INIT.allow.sns ? INIT.allow.sns.map(k => ({ name: k.name, unit: k.units[fyIdx(d || today())] })) : (INIT.snsKinds || [])).filter(k => k.unit > 0);
 
 // 起動を速くする：前回の初期データがあればすぐ画面を出し、最新は裏で受け取る（入力を始めていたら次回の起動から反映）
@@ -391,8 +396,8 @@ function applyInit(init) {
   INIT = init;
   // 画面とサーバーの番号が違うとき（古い画面のまま）は知らせる
   const appV = $('verApp').textContent;
-  if (/v1.08/.test(appV) && init.version) $('verApp').textContent = init.version;
-  $('verWarn').innerHTML = init.version && !/v1.08/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
+  if (/v1.09/.test(appV) && init.version) $('verApp').textContent = init.version;
+  $('verWarn').innerHTML = init.version && !/v1.09/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
   document.body.classList.toggle('adm', ADM());
   $('admBar').style.display = ADM() ? 'block' : 'none';
   if (ADM()) {
@@ -407,7 +412,7 @@ function applyInit(init) {
   if (B.lock) { $('member').style.display = 'none'; $('memberFixed').style.display = ''; $('memberFixed').textContent = B.member; }
   applyForm();
   ['grpDate'].forEach(k => { $(k).min = monthMin(); $(k).max = monthMax(); $(k).value = today(); });
-  $('genbaPrice').textContent = `現地で活動した日は1日${Number(genbaUnit()).toLocaleString()}円です（月によって変わることがあります）。`;
+  setGenbaRegion();
   $('snsHint').textContent = 'SNS投稿は ' + snsKinds().map(k => `${k.name} 1件${Number(k.unit).toLocaleString()}円`).join('・') + ' です（今月の単価）。投稿ごとに1枚入力してください。';
   ['days', 'posts', 'gDays', 'tCards', 'eCards'].forEach(k => { $(k).innerHTML = ''; });
   addDay(); addPost(); addGenbaDay(); addTrans(); addExp();
@@ -613,7 +618,7 @@ function sendAllowance(t) {
     msg(P + 'Msg', ok ? 'ok' : 'warn', `${r.days}件を申請しました（${r.amount.toLocaleString()}円）\n` + lines.join('\n'));
     if (ok) { cancelAllowEdit(t, true); HIST = null; }
   }).withFailureHandler(e => { $(P + 'Submit').disabled = false; msg(P + 'Msg', 'ng', 'エラー：' + e.message); })
-    .submitAllowance({ member: member(), type: t, entries: allowEdit[t] ? entries.slice(0, 1) : entries, id: allowEdit[t] ? allowEdit[t].id : '' });
+    .submitAllowance({ member: member(), type: t, region: t === 'genba' ? genbaRegion() : '', entries: allowEdit[t] ? entries.slice(0, 1) : entries, id: allowEdit[t] ? allowEdit[t].id : '' });
 }
 function cancelAllowEdit(t, keepMsg) {
   allowEdit[t] = null;
@@ -625,7 +630,7 @@ function editAllow(i) {
   const a = HIST.allowances[i];
   allowEdit[a.type] = a;
   if (a.type === 'genba') {
-    $('gDays').innerHTML = ''; addGenbaDay(a.date, a.content);
+    $('gDays').innerHTML = ''; addGenbaDay(a.date, a.content); setGenbaRegion(a.region);
     $('gEdit').style.display = 'block'; $('gAdd').style.display = 'none'; $('gSubmit').textContent = '修正を保存';
   } else {
     $('posts').innerHTML = ''; addPost(a);
@@ -658,6 +663,11 @@ function addExp(v) {
     <div class="row"><label>${esc(FC('expense', 'amount').label)}</label><input type="number" class="eAmt yen" inputmode="numeric" min="1" oninput="expSum()" value="${v.amount || ''}"></div>
     <div class="row"><label>${esc(FC('expense', 'pj').label)}</label><select class="ePj">${pjOpts(INIT.pjs.filter(p => p !== 'DL全体'), '選択')}</select></div>
     <div class="row"><label>${esc(FC('expense', 'budget').label)}</label><div><select class="eBud"></select><span class="hint eBudNote"></span></div></div>
+    <div class="row ePartsRow" style="${v.id ? 'display:none' : ''}"><label class="opt">内訳</label><div>
+      <div class="hint">1枚の領収書に、予算元（PJ）が違うものや、経費にできないものがまざっているときだけ使います。上の金額・PJ・予算元が1つ目の内訳です。経費にできない分は入れないでください。</div>
+      <div class="eParts"></div><button class="mini" type="button" onclick="addExpPart(this.closest('.ecard'))">＋ 内訳を追加</button>
+      <div class="eTotalRow" style="display:none;margin-top:6px"><label class="opt">領収書の合計金額（経費にできない分も含む）</label><input type="number" class="eRcptTotal yen" inputmode="numeric" min="1" placeholder="例：5000" oninput="expSum()"></div>
+      <div class="hint ePartSum"></div></div></div>
     <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('expense', 'store').label)}</label><div><select class="eStore">${opts(INIT.stores, '選択')}</select>
       <input class="eStoreO" placeholder="支払先を記入（店名でなくてもOK）" style="display:none;margin-top:4px"></div></div>
     <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('expense', 'settle').label)}</label><div><select class="eSettle">${opts(INIT.settles, ADM() ? '（空なら本人立替）' : '選択')}</select>
@@ -684,8 +694,34 @@ function addExp(v) {
   }
   renumber('#eCards .ecard', '経費'); expSum();
 }
+/** 内訳を1行足す（金額・PJ・予算元）。行の中に .ePj/.eBud があるので setBudgetOpts がそのまま使える */
+function addExpPart(card) {
+  const r = document.createElement('div');
+  r.className = 'ePart';
+  r.style.cssText = 'border:1px dashed #cbd5e1;border-radius:8px;padding:6px;margin:6px 0';
+  r.innerHTML = `<div style="display:flex;gap:6px;align-items:center"><b class="ePartNo"></b><input type="number" class="eAmt yen" inputmode="numeric" min="1" placeholder="金額（円）" oninput="expSum()"><button class="mini del" type="button">削除</button></div>
+    <select class="ePj" style="margin-top:4px">${pjOpts(INIT.pjs.filter(p => p !== 'DL全体'), 'PJ・企画を選択')}</select>
+    <div><select class="eBud" style="margin-top:4px"></select><span class="hint eBudNote"></span></div>`;
+  const main = card.querySelector('.ePj');
+  r.querySelector('.ePj').value = main.value; setBudgetOpts(r);
+  r.querySelector('.ePj').onchange = () => setBudgetOpts(r);
+  r.querySelector('.del').onclick = () => { r.remove(); expSum(); };
+  card.querySelector('.eParts').appendChild(r);
+  card.querySelector('.eTotalRow').style.display = '';
+  expSum();
+}
+/** 内訳の番号と合計の表示 */
+function expParts(card) {
+  const ps = [...card.querySelectorAll('.ePart')];
+  ps.forEach((p, i) => { p.querySelector('.ePartNo').textContent = `内訳${i + 2}`; });
+  const box = card.querySelector('.ePartSum');
+  if (!box) return;
+  if (!ps.length) { card.querySelector('.eTotalRow').style.display = 'none'; box.textContent = ''; return; }
+  const sum = [...card.querySelectorAll('.eAmt')].reduce((t, e) => t + (Number(e.value) || 0), 0), tot = Number(card.querySelector('.eRcptTotal').value) || 0;
+  box.textContent = `内訳 ${ps.length + 1}つ・申請する合計 ${sum.toLocaleString()}円` + (tot ? `（領収書 ${tot.toLocaleString()}円のうち。経費にしない分 ${(tot - sum).toLocaleString()}円）` : '');
+}
 function renumber(sel, name) { const l = document.querySelectorAll(sel); l.forEach((c, i) => { c.querySelector('.ttl2').textContent = l.length > 1 ? `${name} ${i + 1}` : ''; c.querySelector('.del').style.display = l.length > 1 ? '' : 'none'; }); }
-function expSum() { renumber('#eCards .ecard', '経費'); const s = [...document.querySelectorAll('#eCards .eAmt')].reduce((t, e) => t + (Number(e.value) || 0), 0); const n = document.querySelectorAll('#eCards .ecard').length; $('eTotal').textContent = n > 1 ? `${n}件・合計 ${s.toLocaleString()}円` : ''; }
+function expSum() { renumber('#eCards .ecard', '経費'); document.querySelectorAll('#eCards .ecard').forEach(expParts); const s = [...document.querySelectorAll('#eCards .eAmt')].reduce((t, e) => t + (Number(e.value) || 0), 0); const n = document.querySelectorAll('#eCards .ecard').length; $('eTotal').textContent = n > 1 ? `${n}件・合計 ${s.toLocaleString()}円` : ''; }
 // 予算元＝予算確定版の「大項目」（選んだPJ・企画のもの）。予算がないPJは「予算外」だけ
 function setBudgetOpts(d, keep) {
   const pj = d.querySelector('.ePj').value, sel = d.querySelector('.eBud');
@@ -722,7 +758,11 @@ async function sendExpense() {
     const dt = readDate(d, 'eDate');
     const p = { id: expEdit ? expEdit.id : '', date: dt.date, monthOnly: dt.monthOnly, pj: q('.ePj').value, budget: q('.eBud').value, amount: q('.eAmt').value,
       store: q('.eStore').value === 'その他' ? (q('.eStoreO').value.trim() ? `その他（${q('.eStoreO').value.trim()}）` : '') : q('.eStore').value,
-      settle: settleValue(d), note: q('.eNote').value.trim(), samePaper: q('.eSame').checked, extra: readExtras(d, errs, t) };
+      settle: settleValue(d), note: q('.eNote').value.trim(), samePaper: q('.eSame').checked, extra: readExtras(d, errs, t),
+      parts: expEdit ? [] : [...d.querySelectorAll('.ePart')].map(r => ({ amount: r.querySelector('.eAmt').value, pj: r.querySelector('.ePj').value, budget: r.querySelector('.eBud').value })),
+      receiptTotal: expEdit ? '' : (d.querySelector('.eRcptTotal') || {}).value || '' };
+    p.parts.forEach((x, k) => { if (!(Number(x.amount) > 0) || !x.pj || !x.budget) errs.push(t + `内訳${k + 2}：金額・PJ・予算元を入れてください`); else if (/レンタカー|ガソリン/.test(x.budget)) errs.push(t + `内訳${k + 2}：レンタカー・ガソリンは「🚃 交通費」で申請してください`); });
+    if (p.parts.length && Number(p.receiptTotal) > 0 && Number(p.receiptTotal) < [p.amount].concat(p.parts.map(x => x.amount)).reduce((a, b) => a + (Number(b) || 0), 0)) errs.push(t + '内訳の合計が領収書の合計金額より多くなっています');
     // 管理者は 名前・月・金額・PJ・予算元 だけでよい（社員立替を選んだときは社員も）
     const need = ADM() ? [['date', '月'], ['amount', '金額'], ['pj', 'PJ・企画'], ['budget', '予算元']].concat(q('.eSettle').value ? [['settle', '精算方法（社員立替は社員も）']] : [])
       : [['date', '購入日'], ['amount', '金額'], ['pj', 'PJ・企画'], ['budget', '予算元'], ['store', '支払先・店舗（その他は支払先）'], ['settle', '精算方法（社員立替は社員も）']];
@@ -752,7 +792,7 @@ async function sendExpense() {
   google.script.run.withSuccessHandler(rs => {
     $('eSubmit').disabled = false;
     const ok = rs.every(r => r.ok);
-    msg('eMsg', ok && !rs.some(r => r.needCheck) ? 'ok' : 'warn', rs.map(r => `${rs.length > 1 ? '経費' + r.no + '：' : ''}${r.ok ? '登録しました' + (r.needCheck ? '（要確認）' : '') + (r.fileName ? `　領収書：${r.folder}／${r.fileName}` : '') : 'エラー：' + r.error}`).join('\n'));
+    msg('eMsg', ok && !rs.some(r => r.needCheck) ? 'ok' : 'warn', rs.map(r => `${rs.length > 1 ? '経費' + r.no + '：' : ''}${r.ok ? '登録しました' + (r.parts > 1 ? `（内訳${r.parts}つ）` : '') + (r.needCheck ? '（要確認）' : '') + (r.fileName ? `　領収書：${r.folder}／${r.fileName}` : '') : 'エラー：' + r.error}`).join('\n'));
     if (ok) resetExpense(); else rs.filter(r => r.ok).map(r => cards[r.no - 1]).forEach(c => c.remove());
     HIST = null; expSum();
   }).withFailureHandler(fail).submitExpenses(list);
