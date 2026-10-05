@@ -150,7 +150,7 @@
   <!-- 交通費 -->
   <div class="pane" id="p-transport">
     <div class="edit-banner" id="tEdit">✏️ 交通費を修正中です。<button class="mini" onclick="cancelTransEdit()">修正をやめる</button></div>
-    <p class="hint">交通費は「現地に来るため」の移動費です。車で来た場合はガソリン・ETCを選びます。<b>現地に着いてからのガソリン・ETC・レンタカーは「経費」で申請</b>してください。<b>何件でもまとめて申請できます</b>（1件＝領収書1枚）。</p>
+    <p class="hint">交通費は「現地に来るため」の移動費です。車で来た場合はガソリン・ETCを選びます。<b>現地でのレンタカー・ガソリン代もここ（交通費）で申請</b>してください（交通手段で「レンタカー」「ガソリン」を選ぶ）。<b>何件でもまとめて申請できます</b>（1件＝領収書1枚）。</p>
     <div id="tCards"></div>
     <div class="bar"><button class="btn sub" type="button" id="tAdd" onclick="addTrans()">＋ 交通費を追加</button><span class="total" id="tTotal"></span></div>
     <div class="bar"><span class="hint">領収書は「交通費／あなたの名前」フォルダに自動で保存されます。全額あなた（支払った人）に給与と一緒に精算されます。</span><button class="btn" id="tSubmit" onclick="sendTransport()">交通費を申請</button></div>
@@ -213,7 +213,7 @@
   <!-- 経費 -->
   <div class="pane" id="p-expense">
     <div class="edit-banner" id="eEdit">✏️ 経費を修正中です。<button class="mini" onclick="cancelExpEdit()">修正をやめる</button></div>
-    <p class="hint"><b>何件でもまとめて申請できます</b>（1件＝領収書1枚）。<b>あなたに振り込まれるのは「本人立替」のときだけ</b>です。領収書は「名前_日付_PJ企画_金額」に自動で名前が変わります。</p>
+    <p class="hint"><b>何件でもまとめて申請できます</b>（1件＝領収書1枚）。<b>あなたに振り込まれるのは「本人立替」のときだけ</b>です。<b>レンタカー・ガソリンは（現地での分も）「🚃 交通費」で申請</b>してください。領収書は「名前_日付_PJ企画_金額」に自動で名前が変わります。</p>
     <div id="eCards"></div>
     <div class="bar"><button class="btn sub" type="button" id="eAdd" onclick="addExp()">＋ 経費を追加</button><span class="total" id="eTotal"></span></div>
     <div id="perm" class="hint" style="margin-top:8px"></div>
@@ -235,7 +235,7 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.04</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.05</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -388,8 +388,8 @@ function applyInit(init) {
   INIT = init;
   // 画面とサーバーの番号が違うとき（古い画面のまま）は知らせる
   const appV = $('verApp').textContent;
-  if (/v1.04/.test(appV) && init.version) $('verApp').textContent = init.version;
-  $('verWarn').innerHTML = init.version && !/v1.04/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
+  if (/v1.05/.test(appV) && init.version) $('verApp').textContent = init.version;
+  $('verWarn').innerHTML = init.version && !/v1.05/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
   document.body.classList.toggle('adm', ADM());
   $('admBar').style.display = ADM() ? 'block' : 'none';
   if (ADM()) {
@@ -730,6 +730,7 @@ async function sendExpense() {
     if (REQ('expense', 'note') && !p.note) miss.push(FC('expense', 'note').label);
     if (miss.length) errs.push(t + '未入力：' + miss.join('、'));
     else if (!inMonth_(p.date)) errs.push(t + MONTH_NG());
+    if (/レンタカー|ガソリン/.test(p.store + ' ' + p.budget)) errs.push(t + 'レンタカー・ガソリンは（現地での分も）「🚃 交通費」で申請してください');
     p._d = d;
     return p;
   });
