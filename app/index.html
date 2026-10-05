@@ -235,7 +235,7 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.03</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.04</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -388,8 +388,8 @@ function applyInit(init) {
   INIT = init;
   // 画面とサーバーの番号が違うとき（古い画面のまま）は知らせる
   const appV = $('verApp').textContent;
-  if (/v1.03/.test(appV) && init.version) $('verApp').textContent = init.version;
-  $('verWarn').innerHTML = init.version && !/v1.03/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
+  if (/v1.04/.test(appV) && init.version) $('verApp').textContent = init.version;
+  $('verWarn').innerHTML = init.version && !/v1.04/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
   document.body.classList.toggle('adm', ADM());
   $('admBar').style.display = ADM() ? 'block' : 'none';
   if (ADM()) {
@@ -655,11 +655,11 @@ function addExp(v) {
     <div class="row"><label>${esc(FC('expense', 'amount').label)}</label><input type="number" class="eAmt" min="1" oninput="expSum()" value="${v.amount || ''}"></div>
     <div class="row"><label>${esc(FC('expense', 'pj').label)}</label><select class="ePj">${pjOpts(INIT.pjs.filter(p => p !== 'DL全体'), '選択')}</select></div>
     <div class="row"><label>${esc(FC('expense', 'budget').label)}</label><div><select class="eBud"></select><span class="hint eBudNote"></span></div></div>
-    <div class="row"><label>${esc(FC('expense', 'store').label)}</label><div><select class="eStore">${opts(INIT.stores, '選択')}</select>
+    <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('expense', 'store').label)}</label><div><select class="eStore">${opts(INIT.stores, '選択')}</select>
       <input class="eStoreO" placeholder="支払先を記入（店名でなくてもOK）" style="display:none;margin-top:4px"></div></div>
-    <div class="row"><label>${esc(FC('expense', 'settle').label)}</label><div><select class="eSettle">${opts(INIT.settles, '選択')}</select>
+    <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('expense', 'settle').label)}</label><div><select class="eSettle">${opts(INIT.settles, ADM() ? '（空なら本人立替）' : '選択')}</select>
       <select class="eStaff" style="display:none;margin-top:4px">${opts(INIT.staff || [], '払った社員を選ぶ')}</select><div class="hint eSetInfo"></div></div></div>
-    <div class="row" style="${SHOW('expense', 'file') || ADM() ? '' : 'display:none'}"><label class="${!ADM() && !REQ('expense', 'file') ? 'opt' : ''}">${esc(FC('expense', 'file').label)}<span class="eFileNote"></span></label><input type="file" class="eFile" accept="image/*,application/pdf"></div>
+    <div class="row" style="${SHOW('expense', 'file') || ADM() ? '' : 'display:none'}"><label class="${!REQ('expense', 'file') ? 'opt' : ''}">${esc(FC('expense', 'file').label)}<span class="eFileNote"></span></label><input type="file" class="eFile" accept="image/*,application/pdf"></div>
     <div class="row" style="${SHOW('expense', 'rcpt') ? '' : 'display:none'}">${LBL('expense', 'rcpt')}<div><input type="file" class="eRcpt" accept="image/*,application/pdf">
       <label style="margin-top:4px"><input type="checkbox" class="eSame" style="width:auto"> 領収書とレシートは同じ紙</label><span class="hint eRcptNote"></span></div></div>
     <div class="row" style="${SHOW('expense', 'note') ? '' : 'display:none'}">${LBL('expense', 'note')}<input class="eNote" placeholder="${PH('expense', 'note')}" value="${esc(v.note || '')}"></div>
@@ -720,9 +720,12 @@ async function sendExpense() {
     const p = { id: expEdit ? expEdit.id : '', date: dt.date, monthOnly: dt.monthOnly, pj: q('.ePj').value, budget: q('.eBud').value, amount: q('.eAmt').value,
       store: q('.eStore').value === 'その他' ? (q('.eStoreO').value.trim() ? `その他（${q('.eStoreO').value.trim()}）` : '') : q('.eStore').value,
       settle: settleValue(d), note: q('.eNote').value.trim(), samePaper: q('.eSame').checked, extra: readExtras(d, errs, t) };
-    const miss = [['date', ADM() ? '月' : '購入日'], ['amount', '金額'], ['pj', 'PJ・企画'], ['budget', '予算元'], ['store', '支払先・店舗（その他は支払先）'], ['settle', '精算方法（社員立替は社員も）']].filter(([k]) => !p[k]).map(([, n]) => n);
+    // 管理者は 名前・月・金額・PJ・予算元 だけでよい（社員立替を選んだときは社員も）
+    const need = ADM() ? [['date', '月'], ['amount', '金額'], ['pj', 'PJ・企画'], ['budget', '予算元']].concat(q('.eSettle').value ? [['settle', '精算方法（社員立替は社員も）']] : [])
+      : [['date', '購入日'], ['amount', '金額'], ['pj', 'PJ・企画'], ['budget', '予算元'], ['store', '支払先・店舗（その他は支払先）'], ['settle', '精算方法（社員立替は社員も）']];
+    const miss = need.filter(([k]) => !p[k]).map(([, n]) => n);
     const hasFile = q('.eFile').files[0] || (expEdit && expEdit.url);
-    if (!hasFile && (ADM() || REQ('expense', 'file'))) miss.push('領収書');
+    if (!hasFile && REQ('expense', 'file')) miss.push('領収書');
     if (REQ('expense', 'rcpt') && !p.samePaper && !q('.eRcpt').files[0] && !(expEdit && expEdit.receipt)) miss.push('レシート（領収書と同じ紙ならチェック）');
     if (REQ('expense', 'note') && !p.note) miss.push(FC('expense', 'note').label);
     if (miss.length) errs.push(t + '未入力：' + miss.join('、'));
@@ -763,9 +766,9 @@ function addTrans(v) {
   d.innerHTML = `<button class="del" type="button" onclick="this.parentNode.remove();transTotal()">削除</button>
     <div class="ttl2"></div>
     ${dateField('tDate', FC('transport', 'date').label, v.date || (prev ? prev.querySelector('.tDate').value : today()))}
-    <div class="row"><label>${esc(FC('transport', 'mode').label)}</label><select class="tMode">${opts(INIT.transports, '選択')}</select></div>
-    <div class="row"><label>${esc(FC('transport', 'route').label)}</label><div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center"><input class="tFrom" placeholder="例：東京" value="${esc(rt[0] || '')}"><span>→</span><input class="tTo" placeholder="例：大原" value="${esc(rt.slice(1).join(' → '))}"></div></div>
-    <div class="row"><label>${esc(FC('transport', 'trip').label)}</label><select class="tTrip"><option>片道</option><option>往復</option><option>その他</option></select></div>
+    <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('transport', 'mode').label)}</label><select class="tMode">${opts(INIT.transports, '選択')}</select></div>
+    <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('transport', 'route').label)}</label><div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center"><input class="tFrom" placeholder="例：東京" value="${esc(rt[0] || '')}"><span>→</span><input class="tTo" placeholder="例：大原" value="${esc(rt.slice(1).join(' → '))}"></div></div>
+    <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('transport', 'trip').label)}</label><select class="tTrip">${ADM() ? '<option value="">（なし）</option>' : ''}<option>片道</option><option>往復</option><option>その他</option></select></div>
     <div class="row"><label>${esc(FC('transport', 'amount').label)}</label><input type="number" class="tAmt" min="1" value="${v.amount || ''}"></div>
     <div class="row" style="${SHOW('transport', 'split') ? '' : 'display:none'}"><label class="opt">${esc(FC('transport', 'split').label)}</label><div>
       <div class="hint">${PH('transport', 'split')}。ほかのメンバーの分も一緒に払ったときは「＋ メンバー」で、その人と金額を足してください（内訳の合計＝金額）。</div>
@@ -818,7 +821,9 @@ async function sendTransport() {
     const p = { id: transEdit ? transEdit.id : '', date: dt.date, monthOnly: dt.monthOnly, mode: q('.tMode').value, from: q('.tFrom').value.trim(), to: q('.tTo').value.trim(), roundTrip: q('.tTrip').value,
       amount: q('.tAmt').value, split: readSplit(d), note: q('.tNote').value.trim(), extra: readExtras(d, errs, t) };
     p.route = p.from && p.to ? `${p.from} → ${p.to}` : '';
-    const miss = [['date', ADM() ? '月' : '利用日'], ['mode', '交通手段'], ['from', 'どこから'], ['to', 'どこまで'], ['roundTrip', '片道・往復'], ['amount', '金額']].filter(([k]) => !p[k]).map(([, n]) => n);
+    const need = ADM() ? [['date', '月'], ['amount', '金額']] : [['date', '利用日'], ['mode', '交通手段'], ['from', 'どこから'], ['to', 'どこまで'], ['roundTrip', '片道・往復'], ['amount', '金額']];   // 管理者は名前・月・金額だけでよい
+    const miss = need.filter(([k]) => !p[k]).map(([, n]) => n);
+    if (ADM() && !!p.from !== !!p.to) miss.push('区間は「どこから」「どこまで」の両方（なしなら両方空）');
     if (REQ('transport', 'file') && !q('.tFile').files[0] && !(transEdit && transEdit.url)) miss.push('領収書');
     if (REQ('transport', 'note') && !p.note) miss.push(FC('transport', 'note').label);
     if (miss.length) errs.push(t + '未入力：' + miss.join('、'));
