@@ -238,7 +238,7 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.07</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.08</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -391,8 +391,8 @@ function applyInit(init) {
   INIT = init;
   // 画面とサーバーの番号が違うとき（古い画面のまま）は知らせる
   const appV = $('verApp').textContent;
-  if (/v1.07/.test(appV) && init.version) $('verApp').textContent = init.version;
-  $('verWarn').innerHTML = init.version && !/v1.07/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
+  if (/v1.08/.test(appV) && init.version) $('verApp').textContent = init.version;
+  $('verWarn').innerHTML = init.version && !/v1.08/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
   document.body.classList.toggle('adm', ADM());
   $('admBar').style.display = ADM() ? 'block' : 'none';
   if (ADM()) {
@@ -851,14 +851,14 @@ async function sendTransport() {
   const fail = e => { $('tSubmit').disabled = false; msg('tMsg', 'ng', 'エラー：' + e.message); };
   if (transEdit) {
     return google.script.run.withSuccessHandler(r => {
-      $('tSubmit').disabled = false; msg('tMsg', r.status === '要確認' ? 'warn' : 'ok', '修正しました' + (r.status === '要確認' ? '（領収書がないため「要確認」）' : ''));
+      $('tSubmit').disabled = false; msg('tMsg', r.needCheck ? 'warn' : 'ok', '修正しました' + (r.needCheck ? '（領収書がないため、管理者が確認します）' : ''));
       resetTransport(); HIST = null;
     }).withFailureHandler(fail).submitTransport(list[0]);
   }
   google.script.run.withSuccessHandler(rs => {
     $('tSubmit').disabled = false;
     const ok = rs.every(r => r.ok);
-    msg('tMsg', ok && !rs.some(r => r.status === '要確認') ? 'ok' : 'warn', rs.map(r => `${rs.length > 1 ? '交通費' + r.no + '：' : ''}${r.ok ? '申請しました' + (r.status === '要確認' ? '（領収書がないため「要確認」）' : '') : 'エラー：' + r.error}`).join('\n'));
+    msg('tMsg', ok && !rs.some(r => r.needCheck) ? 'ok' : 'warn', rs.map(r => `${rs.length > 1 ? '交通費' + r.no + '：' : ''}${r.ok ? '申請しました' + (r.needCheck ? '（領収書がないため、管理者が確認します）' : '') : 'エラー：' + r.error}`).join('\n'));
     if (ok) resetTransport(); else rs.filter(r => r.ok).map(r => cards[r.no - 1]).forEach(c => c.remove());
     HIST = null; transTotal();
   }).withFailureHandler(fail).submitTransports(list);
