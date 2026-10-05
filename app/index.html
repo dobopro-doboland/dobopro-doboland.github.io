@@ -58,6 +58,9 @@
 </style>
 
 <style>
+  /* 金額の欄：上下の矢印（1円ずつ増減）を出さない */
+  .yen::-webkit-outer-spin-button, .yen::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  .yen { -moz-appearance:textfield; appearance:textfield; }
   .tabs { display:flex; gap:4px; border-bottom:2px solid var(--brand); margin-bottom:12px; flex-wrap:wrap; }
   .tabs button { border:1px solid var(--line); border-bottom:none; background:#f1f5f9; padding:8px 14px; border-radius:6px 6px 0 0; cursor:pointer; font-size:14px; }
   .tabs button.on { background:var(--brand); color:#fff; border-color:var(--brand); }
@@ -165,7 +168,7 @@
       <div><label>PJ・企画</label><select id="bPj"></select></div>
       <div><label>小項目（何に使うか）</label><input id="bItem" placeholder="例：完成披露会の宿泊費（学生20名）"></div>
       <div><label>使用予定月</label><select id="bMonth"></select></div>
-      <div><label>単価（円）</label><input type="number" id="bUnit" min="1" oninput="budSum()"></div>
+      <div><label>単価（円）</label><input type="number" id="bUnit" class="yen" inputmode="numeric" min="1" oninput="budSum()"></div>
       <div><label>数量・回数</label><input type="number" id="bQty" min="1" value="1" oninput="budSum()"></div>
       <div><label>区分</label><select id="bKind"><option>新規（当初予算にない）</option><option>増額（当初予算を超える）</option></select></div>
     </div>
@@ -235,7 +238,7 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.05</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.06</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -388,8 +391,8 @@ function applyInit(init) {
   INIT = init;
   // 画面とサーバーの番号が違うとき（古い画面のまま）は知らせる
   const appV = $('verApp').textContent;
-  if (/v1.05/.test(appV) && init.version) $('verApp').textContent = init.version;
-  $('verWarn').innerHTML = init.version && !/v1.05/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
+  if (/v1.06/.test(appV) && init.version) $('verApp').textContent = init.version;
+  $('verWarn').innerHTML = init.version && !/v1.06/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
   document.body.classList.toggle('adm', ADM());
   $('admBar').style.display = ADM() ? 'block' : 'none';
   if (ADM()) {
@@ -652,7 +655,7 @@ function addExp(v) {
   d.innerHTML = `<button class="del" type="button" onclick="this.parentNode.remove();expSum()">削除</button>
     <div class="ttl2"></div>
     ${dateField('eDate', FC('expense', 'date').label, v.date || (prev ? prev.querySelector('.eDate').value : today()))}
-    <div class="row"><label>${esc(FC('expense', 'amount').label)}</label><input type="number" class="eAmt" min="1" oninput="expSum()" value="${v.amount || ''}"></div>
+    <div class="row"><label>${esc(FC('expense', 'amount').label)}</label><input type="number" class="eAmt yen" inputmode="numeric" min="1" oninput="expSum()" value="${v.amount || ''}"></div>
     <div class="row"><label>${esc(FC('expense', 'pj').label)}</label><select class="ePj">${pjOpts(INIT.pjs.filter(p => p !== 'DL全体'), '選択')}</select></div>
     <div class="row"><label>${esc(FC('expense', 'budget').label)}</label><div><select class="eBud"></select><span class="hint eBudNote"></span></div></div>
     <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('expense', 'store').label)}</label><div><select class="eStore">${opts(INIT.stores, '選択')}</select>
@@ -770,7 +773,7 @@ function addTrans(v) {
     <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('transport', 'mode').label)}</label><select class="tMode">${opts(INIT.transports, '選択')}</select></div>
     <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('transport', 'route').label)}</label><div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center"><input class="tFrom" placeholder="例：東京" value="${esc(rt[0] || '')}"><span>→</span><input class="tTo" placeholder="例：大原" value="${esc(rt.slice(1).join(' → '))}"></div></div>
     <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('transport', 'trip').label)}</label><select class="tTrip">${ADM() ? '<option value="">（なし）</option>' : ''}<option>片道</option><option>往復</option><option>その他</option></select></div>
-    <div class="row"><label>${esc(FC('transport', 'amount').label)}</label><input type="number" class="tAmt" min="1" value="${v.amount || ''}"></div>
+    <div class="row"><label>${esc(FC('transport', 'amount').label)}</label><input type="number" class="tAmt yen" inputmode="numeric" min="1" value="${v.amount || ''}"></div>
     <div class="row" style="${SHOW('transport', 'split') ? '' : 'display:none'}"><label class="opt">${esc(FC('transport', 'split').label)}</label><div>
       <div class="hint">${PH('transport', 'split')}。ほかのメンバーの分も一緒に払ったときは「＋ メンバー」で、その人と金額を足してください（内訳の合計＝金額）。</div>
       <div class="tSplit"></div><button class="mini" type="button">＋ メンバー</button> <span class="hint tSplitSum"></span></div></div>
@@ -789,7 +792,7 @@ function addSplit(d, name, amount) {
   const r = document.createElement('div');
   r.className = 'row-split';
   r.style.cssText = 'display:grid;grid-template-columns:1fr 120px 50px;gap:6px;margin:4px 0';
-  r.innerHTML = `<select class="sName">${memberOptions(name || '')}</select><input type="number" class="sAmt" min="1" placeholder="円" value="${amount || ''}"><button class="mini del" type="button">削除</button>`;
+  r.innerHTML = `<select class="sName">${memberOptions(name || '')}</select><input type="number" class="sAmt yen" inputmode="numeric" min="1" placeholder="円" value="${amount || ''}"><button class="mini del" type="button">削除</button>`;
   r.querySelector('.sAmt').oninput = () => transSum(d);
   r.querySelector('.del').onclick = () => { r.remove(); transSum(d); };
   d.querySelector('.tSplit').appendChild(r);
@@ -1039,6 +1042,9 @@ function editExp(i) {
   $('eEdit').style.display = 'block'; $('eAdd').style.display = 'none'; $('eSubmit').textContent = '修正を保存';
   msg('eMsg'); go('expense');
 }
+// 金額の欄：マウスホイール・上下キーで1円ずつ変わらないようにする
+document.addEventListener('wheel', e => { const t = e.target; if (t.classList && t.classList.contains('yen') && t === document.activeElement) t.blur(); }, { passive: true });
+document.addEventListener('keydown', e => { if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.target.classList && e.target.classList.contains('yen')) e.preventDefault(); });
 </script>
 <script>
 /* ---------- パイナップル：写真は送る前に小さくする（通信量と待ち時間を減らす） ---------- */
