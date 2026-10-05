@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#2f6b2a">
+<title>DOBOLAND 参加登録フォーム</title>
+<link rel="icon" href="../app/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../app/icon-180.png">
+<style>
+  :root { --ink:#1f2937; --muted:#6b7280; --line:#d1d5db; --brand:#2f6b2a; --ok:#15803d; --warn:#b45309; --ng:#b91c1c; --bg:#f8fafc; }
+  * { box-sizing:border-box; }
+  body { font-family:"Hiragino Sans","Noto Sans JP",sans-serif; color:var(--ink); margin:0 auto; padding:0 14px calc(24px + env(safe-area-inset-bottom)); background:#fff; font-size:15px; max-width:640px; }
+  h2 { font-size:16px; margin:24px 0 10px; color:var(--brand); border-left:4px solid var(--brand); padding-left:8px; }
+  label.q { display:block; font-size:14px; font-weight:bold; margin-bottom:6px; }
+  .req::after { content:" ＊必須"; color:var(--ng); font-size:11px; font-weight:normal; }
+  input[type=text], input[type=tel], select, textarea { width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; font-size:16px; font-family:inherit; background:#fff; }
+  textarea { resize:vertical; min-height:70px; }
+  .field { margin-bottom:16px; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .opts label { display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; margin-bottom:6px; background:#fff; cursor:pointer; font-size:15px; }
+  .opts input[type=radio], .opts input[type=checkbox] { width:20px; height:20px; flex:0 0 20px; margin:0; }
+  .opts label:has(input:checked) { border-color:var(--brand); background:#f3faf2; }
+  .opts .other input[type=text] { padding:6px 8px; font-size:15px; flex:1; min-width:0; }
+  .opts.inline { display:flex; gap:8px; flex-wrap:wrap; } .opts.inline label { flex:1; min-width:120px; }
+  .sub { margin:6px 0 0 14px; padding-left:12px; border-left:3px solid #cfe3cc; }
+  header { padding:calc(16px + env(safe-area-inset-top)) 0 6px; }
+  header .t1 { font-size:20px; font-weight:bold; color:var(--brand); }
+  .rule { background:#fffbea; border:1px solid #f5d76e; border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.7; margin:8px 0 14px; }
+  .grp { border:1px solid var(--line); border-radius:10px; padding:8px 10px; margin-bottom:8px; background:var(--bg); }
+  .grp > label { display:flex; align-items:center; gap:10px; padding:4px 0; margin:0; font-weight:bold; cursor:pointer; }
+  .grp > label input { width:20px; height:20px; margin:0; }
+  .grp .days { margin:4px 0 4px 30px; }
+  .grp .days .note { margin-bottom:4px; }
+  .btn { padding:12px 18px; font-size:16px; border-radius:10px; border:1px solid var(--brand); background:var(--brand); color:#fff; cursor:pointer; }
+  .btn.sub2 { background:#fff; color:var(--brand); }
+  .btn:disabled { opacity:.5; cursor:default; }
+  .msg { padding:10px; border-radius:8px; margin:10px 0; font-size:14px; white-space:pre-wrap; }
+  .msg.ng { background:#fde8e8; color:var(--ng); } .msg.ok { background:#e7f6ec; color:var(--ok); } .msg.warn { background:#fff4e5; color:var(--warn); }
+  .confirm dt { font-size:12px; color:var(--muted); margin-top:10px; } .confirm dd { margin:2px 0 0; font-size:15px; white-space:pre-wrap; }
+  .note { font-size:12px; color:var(--muted); }
+  .hidden { display:none !important; }
+  a { color:var(--brand); }
+</style>
+</head>
+<body>
+<header><div class="t1">DOBOLAND 参加登録フォーム</div></header>
+<div class="rule">こちらは<b>必ず説明会参加後</b>にご回答ください。<br>最後にインターンシップ契約書（PDF）をアップロードするので、パソコンでの回答を推奨します。</div>
+<div id="msgTop" class="msg warn">読み込み中…</div>
+
+<div id="formView" class="hidden">
+  <h2>あなたについて</h2>
+  <div class="row2">
+    <div class="field"><label class="q req">姓</label><input type="text" id="sei" autocomplete="family-name" placeholder="例）山田"></div>
+    <div class="field"><label class="q req">名</label><input type="text" id="mei" autocomplete="given-name" placeholder="例）花子"></div>
+  </div>
+  <div class="field"><label class="q req">学校名</label><input type="text" id="school" placeholder="例）〇〇大学"></div>
+  <div class="field"><label class="q req">専攻</label><div class="opts" id="o_major"></div></div>
+  <div class="field"><label class="q req">学年</label><div class="opts" id="o_grade"></div></div>
+  <div class="field"><label class="q req">お住まいの都道府県</label><select id="pref"><option value="">選んでください</option></select></div>
+  <div class="field"><label class="q req">このプロジェクトを知ったきっかけ</label><div class="opts" id="o_trigger"></div></div>
+  <div class="field"><label class="q req">性別</label><div class="opts inline" id="o_gender"></div></div>
+  <div class="field"><label class="q req">アレルギー・食事制限</label>
+    <div class="opts inline" id="o_allergyHas"></div>
+    <div id="allergyBox" class="sub hidden">
+      <div class="note" style="margin-bottom:6px">当てはまるものをすべて選んでください。ない場合は「その他」に書いてください。</div>
+      <div class="opts" id="o_allergy"></div>
+    </div>
+  </div>
+
+  <h2>緊急連絡先</h2>
+  <div class="field"><label class="q req">緊急連絡者氏名（緊急時連絡がつきやすい保護者等）</label><input type="text" id="emName"></div>
+  <div class="field"><label class="q req">続柄</label><input type="text" id="emRel" placeholder="例）母"></div>
+  <div class="field"><label class="q req">緊急連絡先（電話番号・ハイフンなし）</label><input type="tel" id="emTel" inputmode="numeric" placeholder="例）09012345678" oninput="this.value=this.value.replace(/[^0-9０-９]/g,'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248))"></div>
+  <div class="field"><label class="q">持病・配慮事項</label><div class="note" style="margin-bottom:6px">活動中に配慮してほしいことがあればご記入ください。</div><textarea id="care"></textarea></div>
+
+  <h2>参加するインターン</h2>
+  <div class="field"><label class="q req">参加するインターン</label><div class="opts" id="o_base"></div></div>
+  <div id="baseBox" class="hidden">
+    <div class="field hidden" id="kubunBox"><label class="q req">参加区分</label><div class="opts" id="o_kubun"></div></div>
+    <div class="field"><label class="q req">参加希望日程</label>
+      <div class="note" style="margin-bottom:6px">参加したい日程にチェックし、その中で参加する日を選んでください。</div>
+      <div id="groups"></div></div>
+  </div>
+
+  <h2>紹介について</h2>
+  <div class="note" style="margin:-4px 0 10px">交通費の補助の判定に使います。申し込んだあとに分かった場合は、運営に伝えてください。</div>
+  <div class="field"><label class="q req">あなたをDOBOLANDに紹介した人はいますか</label>
+    <div class="opts inline" id="o_referredByHas"></div>
+    <div id="referredByBox" class="sub hidden"><input type="text" id="referredBy" placeholder="紹介した人の名前"></div></div>
+  <div class="field"><label class="q req">あなたが紹介した人はいますか</label>
+    <div class="opts inline" id="o_referredHas"></div>
+    <div id="referredBox" class="sub hidden"><input type="text" id="referred" placeholder="紹介した人の名前（複数いるときは「、」で区切る）"></div></div>
+
+  <h2>インターンシップ契約書</h2>
+  <div class="field"><label class="q req">インターンシップ契約書の提出（PDF）</label>
+    <div class="rule" style="margin-top:0">
+      <span id="docLinkBox" class="note">先に「参加するインターン」を選ぶと、契約書のリンクが出ます。</span><br>
+      リンクの契約書を開いて<br>ファイル〉コピーを作成〉コピーしたドキュメントに記入〉ファイル〉ダウンロード〉PDFドキュメント<br>
+      の手順でPDFで保存して、ここでアップロードしてください。<br>
+      ※契約書をご提出いただけなかった場合、現地活動でのけが等の責任を担保できないため参加いただけません。あらかじめご理解ください。<br>
+      <a id="career" href="#" target="_blank" rel="noopener">株式会社キャリアナビゲーションとは？</a>
+    </div>
+    <input type="file" id="pdf" accept="application/pdf,.pdf">
+    <div class="note">PDF・10MBまで</div>
+  </div>
+
+  <div id="msgForm"></div>
+  <button class="btn" style="width:100%" type="button" onclick="toConfirm()">確認画面へ</button>
+</div>
+
+<div id="confirmView" class="hidden">
+  <h2>入力内容の確認</h2>
+  <dl class="confirm" id="confirmList"></dl>
+  <div id="msgConfirm"></div>
+  <div class="row2"><button class="btn sub2" type="button" onclick="back()">戻って直す</button><button class="btn" id="sendBtn" type="button" onclick="send()">この内容で送信</button></div>
+</div>
+
+<div id="doneView" class="hidden">
+  <div class="msg ok" style="font-size:16px">送信が完了しました。ありがとうございました。</div>
+  <div class="rule" id="doneInfo"></div>
+  <p class="note">内容を直したいときは、同じ氏名でもう一度送信してください（新しい内容に置きかわります）。</p>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbxdM45NLY_vmQAjf99nUEkMEkRL5M8mWaSaTp3UIQT3E0NN4SCohICamyVf_S1Ipl4/exec'; // GitHub Pages などに置くとき用（Webアプリの画面では使わない）
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const msg = (id, cls, text) => { $(id).innerHTML = text ? `<div class="msg ${cls}">${text}</div>` : ''; };
+let INIT = null;
+
+function call(body) {
+  if (window.google && google.script && google.script.run) {
+    return new Promise((ok, ng) => google.script.run
+      .withSuccessHandler(r => r && r.ok ? ok(r.data) : ng(new Error(r ? r.error : '送信できませんでした')))
+      .withFailureHandler(ng).regApi(body));
+  }
+  return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+    .then(r => { if (!r.ok) throw new Error('通信エラー（' + r.status + '）'); return r.json(); })
+    .then(j => { if (!j.ok) throw new Error(j.error); return j.data; });
+}
+
+/** 選択肢（ラジオ／チェック）。other=true で「その他：＿＿」 */
+function opts(id, list, multi, other, onchange) {
+  const type = multi ? 'checkbox' : 'radio';
+  $('o_' + id).innerHTML = list.map(v => `<label><input type="${type}" name="${id}" value="${esc(v.value || v)}">${esc(v.label || v)}</label>`).join('') +
+    (other ? `<label class="other"><input type="${type}" name="${id}" value="その他"><span style="white-space:nowrap">その他：</span><input type="text" id="${id}Other" onfocus="this.parentNode.querySelector('input').checked=true"></label>` : '');
+  if (onchange) $('o_' + id).addEventListener('change', onchange);
+}
+const val = id => { const e = document.querySelector(`input[name="${id}"]:checked`); return e ? e.value : ''; };
+const vals = id => [...document.querySelectorAll(`input[name="${id}"]:checked`)].map(e => e.value);
+const txt = id => ($(id) ? $(id).value.trim() : '');
+const show = (id, on) => $(id).classList.toggle('hidden', !on);
+
+async function init() {
+  try {
+    INIT = await call({ action: 'regInit' });
+    const o = INIT.opt;
+    opts('major', o.major, false, true); opts('grade', o.grade);
+    $('pref').innerHTML = '<option value="">選んでください</option>' + INIT.areas.map(a => `<optgroup label="${esc(a.area)}">${a.prefs.map(p => `<option>${esc(p)}</option>`).join('')}</optgroup>`).join('');
+    opts('trigger', o.trigger, false, true); opts('gender', o.gender);
+    opts('allergyHas', ['なし', 'あり'], false, false, () => show('allergyBox', val('allergyHas') === 'あり'));
+    opts('allergy', o.allergy, true, true);
+    opts('base', INIT.bases.map(b => ({ value: b.base, label: b.label })), false, false, renderBase);
+    opts('kubun', o.kubun);
+    opts('referredByHas', ['いない', 'いる'], false, false, () => show('referredByBox', val('referredByHas') === 'いる'));
+    opts('referredHas', ['いない', 'いる'], false, false, () => show('referredBox', val('referredHas') === 'いる'));
+    $('career').href = INIT.links.career;
+    msg('msgTop'); $('msgTop').className = ''; $('formView').classList.remove('hidden');
+  } catch (e) {
+    $('msgTop').className = 'msg ng'; $('msgTop').textContent = '読み込めませんでした：' + e.message;
+  }
+}
+
+/** 千葉／和歌山を選んだら、参加区分（千葉だけ）・日程・契約書のリンクを出す */
+function renderBase() {
+  const base = val('base');
+  show('baseBox', !!base); show('kubunBox', base === '千葉');
+  const list = INIT.schedules.filter(s => s.base === base);
+  $('groups').innerHTML = list.length ? list.map((s, i) => `<div class="grp">
+      <label><input type="checkbox" class="gchk" data-i="${i}" onchange="toggleGroup(this)">${esc(s.label)}</label>
+      <div class="days hidden" id="days${i}"><div class="note">参加する日（${s.days.length}日間のうち）</div>
+        <div class="opts">${s.days.map(d => `<label><input type="checkbox" name="dates" value="${esc(d.key)}" data-label="${esc(d.label)}" data-g="${i}">${esc(d.label)}</label>`).join('')}</div></div>
+    </div>`).join('') : '<div class="msg warn">いま申し込める日程はありません。</div>';
+  const doc = base === '千葉' ? INIT.links.docChiba : base === '和歌山' ? INIT.links.docWakayama : '';
+  $('docLinkBox').innerHTML = doc ? `<a href="${esc(doc)}" target="_blank" rel="noopener"><b>インターンシップ契約書 in${esc(base)}</b></a>` : '先に「参加するインターン」を選ぶと、契約書のリンクが出ます。';
+  $('docLinkBox').className = doc ? '' : 'note';
+}
+function toggleGroup(el) {
+  const box = $('days' + el.dataset.i);
+  box.classList.toggle('hidden', !el.checked);
+  box.querySelectorAll('input').forEach(x => { x.checked = el.checked && box.querySelectorAll('input').length === 1; });   // 1日だけの日程は自動でチェック
+}
+
+function gather() {
+  return {
+    sei: txt('sei').replace(/[\s　]+/g, ''), mei: txt('mei').replace(/[\s　]+/g, ''), school: txt('school'),
+    major: val('major'), majorOther: txt('majorOther'), grade: val('grade'), pref: $('pref').value,
+    trigger: val('trigger'), triggerOther: txt('triggerOther'), gender: val('gender'),
+    allergyHas: val('allergyHas'), allergy: vals('allergy').filter(x => x !== 'その他'), allergyOther: vals('allergy').includes('その他') ? txt('allergyOther') : '',
+    emName: txt('emName'), emRel: txt('emRel'), emTel: txt('emTel').replace(/[^0-9]/g, ''), care: txt('care'),
+    base: val('base'), kubun: val('base') === '千葉' ? val('kubun') : '', dates: vals('dates'),
+    referredByHas: val('referredByHas'), referredBy: txt('referredBy'), referredHas: val('referredHas'), referred: txt('referred'),
+  };
+}
+function validate(p) {
+  const f = $('pdf').files[0];
+  if (!p.sei || !p.mei) return '姓と名を入力してください';
+  if (!p.school) return '学校名を入力してください';
+  if (!p.major || (p.major === 'その他' && !p.majorOther)) return '専攻を選んでください（「その他」は内容も入力）';
+  if (!p.grade) return '学年を選んでください';
+  if (!p.pref) return 'お住まいの都道府県を選んでください';
+  if (!p.trigger || (p.trigger === 'その他' && !p.triggerOther)) return 'このプロジェクトを知ったきっかけを選んでください（「その他」は内容も入力）';
+  if (!p.gender) return '性別を選んでください';
+  if (!p.allergyHas) return 'アレルギー・食事制限の「あり・なし」を選んでください';
+  if (p.allergyHas === 'あり') {
+    if (vals('allergy').includes('その他') && !p.allergyOther) return 'アレルギー・食事制限の「その他」の内容を入力してください';
+    if (!p.allergy.length && !p.allergyOther) return 'アレルギー・食事制限の内容を選ぶか、「その他」に書いてください';
+  }
+  if (!p.emName) return '緊急連絡者氏名を入力してください';
+  if (!p.emRel) return '続柄を入力してください';
+  if (!/^0\d{9,10}$/.test(p.emTel)) return '緊急連絡先は電話番号（ハイフンなしの数字10〜11けた）で入力してください';
+  if (!p.base) return '参加するインターンを選んでください';
+  if (p.base === '千葉' && !p.kubun) return '参加区分を選んでください';
+  const groups = [...document.querySelectorAll('.gchk:checked')];
+  if (!groups.length) return '参加希望日程を1つ以上選んでください';
+  for (const g of groups) if (!document.querySelector(`#days${g.dataset.i} input:checked`)) return `${g.parentNode.textContent.trim()} の参加する日を選んでください`;
+  if (!p.referredByHas || (p.referredByHas === 'いる' && !p.referredBy)) return 'あなたを紹介した人について答えてください（いる場合は名前も）';
+  if (!p.referredHas || (p.referredHas === 'いる' && !p.referred)) return 'あなたが紹介した人について答えてください（いる場合は名前も）';
+  if (!f) return 'インターンシップ契約書（PDF）を添付してください';
+  if (!/pdf/i.test(f.type) && !/\.pdf$/i.test(f.name)) return 'インターンシップ契約書はPDFで添付してください';
+  if (f.size > 10 * 1024 * 1024) return 'PDFが10MBを超えています';
+  return '';
+}
+const other = (v, o) => v === 'その他' ? 'その他：' + o : v;
+function toConfirm() {
+  const p = gather(), e = validate(p);
+  if (e) return msg('msgForm', 'ng', esc(e));
+  msg('msgForm');
+  const days = [...document.querySelectorAll('.gchk:checked')].map(g => [...document.querySelectorAll(`#days${g.dataset.i} input:checked`)].map(x => x.dataset.label).join('・')).join('\n');
+  const area = (INIT.areas.find(a => a.prefs.includes(p.pref)) || {}).area || '';
+  const allergy = p.allergyHas === 'なし' ? 'なし' : p.allergy.concat(p.allergyOther ? ['その他：' + p.allergyOther] : []).join('、');
+  const rows = [['氏名', p.sei + ' ' + p.mei], ['学校名', p.school], ['専攻', other(p.major, p.majorOther)], ['学年', p.grade],
+    ['お住まいの都道府県', `${p.pref}（${area}）`], ['このプロジェクトを知ったきっかけ', other(p.trigger, p.triggerOther)], ['性別', p.gender],
+    ['アレルギー・食事制限', allergy], ['緊急連絡者', `${p.emName}（${p.emRel}）　${p.emTel}`], ['持病・配慮事項', p.care || '—'],
+    ['参加するインターン', (INIT.bases.find(b => b.base === p.base) || {}).label]];
+  if (p.base === '千葉') rows.push(['参加区分', p.kubun]);
+  rows.push(['参加する日', days], ['あなたを紹介した人', p.referredByHas === 'いる' ? p.referredBy : 'いない'], ['あなたが紹介した人', p.referredHas === 'いる' ? p.referred : 'いない'],
+    ['インターンシップ契約書', $('pdf').files[0].name]);
+  $('confirmList').innerHTML = rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
+  $('formView').classList.add('hidden'); $('confirmView').classList.remove('hidden'); window.scrollTo(0, 0);
+}
+function back() { $('confirmView').classList.add('hidden'); $('formView').classList.remove('hidden'); }
+function readFile(f) {
+  return new Promise((ok, ng) => { const rd = new FileReader(); rd.onload = () => ok({ name: f.name, mime: f.type || 'application/pdf', data: String(rd.result).split(',')[1] }); rd.onerror = () => ng(new Error('PDFを読み込めませんでした')); rd.readAsDataURL(f); });
+}
+async function send() {
+  const p = gather(), e = validate(p);
+  if (e) { back(); return msg('msgForm', 'ng', esc(e)); }
+  $('sendBtn').disabled = true; msg('msgConfirm', 'warn', '送信しています…（少し時間がかかります）');
+  try {
+    p.file = await readFile($('pdf').files[0]);
+    const r = await call({ action: 'regSubmit', payload: p });
+    $('doneInfo').innerHTML = `受付番号：<b style="user-select:all">${esc(r.id)}</b><br>氏名：${esc(r.name)}<br>${esc(r.base)}<br>参加する日：${esc(r.days.join('・'))}`;
+    $('confirmView').classList.add('hidden'); $('doneView').classList.remove('hidden'); window.scrollTo(0, 0);
+  } catch (err) {
+    msg('msgConfirm', 'ng', err.message === 'Failed to fetch' ? '通信できませんでした。電波のよい所でもう一度送信してください' : esc(err.message));
+  }
+  $('sendBtn').disabled = false;
+}
+init();
+</script>
+</body></html>
