@@ -239,7 +239,7 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.09</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.10</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -396,8 +396,8 @@ function applyInit(init) {
   INIT = init;
   // 画面とサーバーの番号が違うとき（古い画面のまま）は知らせる
   const appV = $('verApp').textContent;
-  if (/v1.09/.test(appV) && init.version) $('verApp').textContent = init.version;
-  $('verWarn').innerHTML = init.version && !/v1.09/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
+  if (/v1.10/.test(appV) && init.version) $('verApp').textContent = init.version;
+  $('verWarn').innerHTML = init.version && !/v1.10/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
   document.body.classList.toggle('adm', ADM());
   $('admBar').style.display = ADM() ? 'block' : 'none';
   if (ADM()) {
@@ -660,12 +660,12 @@ function addExp(v) {
   d.innerHTML = `<button class="del" type="button" onclick="this.parentNode.remove();expSum()">削除</button>
     <div class="ttl2"></div>
     ${dateField('eDate', FC('expense', 'date').label, v.date || (prev ? prev.querySelector('.eDate').value : today()))}
-    <div class="row"><label>${esc(FC('expense', 'amount').label)}</label><input type="number" class="eAmt yen" inputmode="numeric" min="1" oninput="expSum()" value="${v.amount || ''}"></div>
-    <div class="row"><label>${esc(FC('expense', 'pj').label)}</label><select class="ePj">${pjOpts(INIT.pjs.filter(p => p !== 'DL全体'), '選択')}</select></div>
-    <div class="row"><label>${esc(FC('expense', 'budget').label)}</label><div><select class="eBud"></select><span class="hint eBudNote"></span></div></div>
+    <div class="row eMain"><label>${esc(FC('expense', 'amount').label)}</label><input type="number" class="eAmt yen" inputmode="numeric" min="1" oninput="expSum()" value="${v.amount || ''}"></div>
+    <div class="row eMain"><label>${esc(FC('expense', 'pj').label)}</label><select class="ePj">${pjOpts(INIT.pjs.filter(p => p !== 'DL全体'), '選択')}</select></div>
+    <div class="row eMain"><label>${esc(FC('expense', 'budget').label)}</label><div><select class="eBud"></select><span class="hint eBudNote"></span></div></div>
     <div class="row ePartsRow" style="${v.id ? 'display:none' : ''}"><label class="opt">内訳</label><div>
-      <div class="hint">1枚の領収書に、予算元（PJ）が違うものや、経費にできないものがまざっているときだけ使います。上の金額・PJ・予算元が1つ目の内訳です。経費にできない分は入れないでください。</div>
-      <div class="eParts"></div><button class="mini" type="button" onclick="addExpPart(this.closest('.ecard'))">＋ 内訳を追加</button>
+      <div class="hint">1枚の領収書に、予算元（PJ）が違うものや、経費にできないものがまざっているときだけ使います。経費にできない分は入れないでください。</div>
+      <div class="eParts"></div><button class="mini ePartBtn" type="button" onclick="addExpPart(this.closest('.ecard'))">＋ 内訳に分ける</button>
       <div class="eTotalRow" style="display:none;margin-top:6px"><label class="opt">領収書の合計金額（経費にできない分も含む）</label><input type="number" class="eRcptTotal yen" inputmode="numeric" min="1" placeholder="例：5000" oninput="expSum()"></div>
       <div class="hint ePartSum"></div></div></div>
     <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('expense', 'store').label)}</label><div><select class="eStore">${opts(INIT.stores, '選択')}</select>
@@ -694,31 +694,56 @@ function addExp(v) {
   }
   renumber('#eCards .ecard', '経費'); expSum();
 }
-/** 内訳を1行足す（金額・PJ・予算元）。行の中に .ePj/.eBud があるので setBudgetOpts がそのまま使える */
-function addExpPart(card) {
+/** 内訳の1行（金額・PJ・予算元）を作る。行の中に .ePj/.eBud があるので setBudgetOpts がそのまま使える */
+function makeExpPart(card, v) {
   const r = document.createElement('div');
   r.className = 'ePart';
   r.style.cssText = 'border:1px dashed #cbd5e1;border-radius:8px;padding:6px;margin:6px 0';
-  r.innerHTML = `<div style="display:flex;gap:6px;align-items:center"><b class="ePartNo"></b><input type="number" class="eAmt yen" inputmode="numeric" min="1" placeholder="金額（円）" oninput="expSum()"><button class="mini del" type="button">削除</button></div>
+  r.innerHTML = `<div style="display:flex;gap:6px;align-items:center"><b class="ePartNo" style="white-space:nowrap"></b><input type="number" class="eAmt yen" inputmode="numeric" min="1" placeholder="金額（円）" oninput="expSum()"><button class="mini del" type="button">削除</button></div>
     <select class="ePj" style="margin-top:4px">${pjOpts(INIT.pjs.filter(p => p !== 'DL全体'), 'PJ・企画を選択')}</select>
     <div><select class="eBud" style="margin-top:4px"></select><span class="hint eBudNote"></span></div>`;
-  const main = card.querySelector('.ePj');
-  r.querySelector('.ePj').value = main.value; setBudgetOpts(r);
+  r.querySelector('.eAmt').value = v.amount || '';
+  r.querySelector('.ePj').value = v.pj || '';
+  setBudgetOpts(r, v.budget || '');
   r.querySelector('.ePj').onchange = () => setBudgetOpts(r);
-  r.querySelector('.del').onclick = () => { r.remove(); expSum(); };
+  r.querySelector('.del').onclick = () => { r.remove(); mergeExpParts(card); expSum(); };
   card.querySelector('.eParts').appendChild(r);
-  card.querySelector('.eTotalRow').style.display = '';
+  return r;
+}
+/** 「内訳に分ける」：上の金額・PJ・予算元を内訳1に移して、内訳2を足す。2回目からは内訳を1つ足す */
+function addExpPart(card) {
+  const q = c => card.querySelector(c);
+  if (!card.querySelector('.ePart')) {
+    makeExpPart(card, { amount: q('.eAmt').value, pj: q('.ePj').value, budget: q('.eBud').value });
+    q('.eAmt').value = '';   // 上の欄は使わない（合計に二重に入らないよう空に）
+    card.querySelectorAll('.eMain').forEach(e => { e.style.display = 'none'; });
+    q('.eTotalRow').style.display = '';
+    q('.ePartBtn').textContent = '＋ 内訳を追加';
+  }
+  makeExpPart(card, { pj: card.querySelector('.ePart .ePj').value });
   expSum();
+}
+/** 内訳が1つだけになったら、上の欄に戻す */
+function mergeExpParts(card) {
+  const ps = card.querySelectorAll('.ePart');
+  if (ps.length !== 1) return;
+  const r = ps[0], q = c => card.querySelector(c);
+  const v = { amount: r.querySelector('.eAmt').value, pj: r.querySelector('.ePj').value, budget: r.querySelector('.eBud').value };
+  r.remove();
+  card.querySelectorAll('.eMain').forEach(e => { e.style.display = ''; });
+  q('.eAmt').value = v.amount; q('.ePj').value = v.pj; setBudgetOpts(card, v.budget);
+  q('.eTotalRow').style.display = 'none'; q('.eRcptTotal').value = '';
+  q('.ePartBtn').textContent = '＋ 内訳に分ける';
 }
 /** 内訳の番号と合計の表示 */
 function expParts(card) {
   const ps = [...card.querySelectorAll('.ePart')];
-  ps.forEach((p, i) => { p.querySelector('.ePartNo').textContent = `内訳${i + 2}`; });
+  ps.forEach((p, i) => { p.querySelector('.ePartNo').textContent = `内訳${i + 1}`; });
   const box = card.querySelector('.ePartSum');
   if (!box) return;
-  if (!ps.length) { card.querySelector('.eTotalRow').style.display = 'none'; box.textContent = ''; return; }
-  const sum = [...card.querySelectorAll('.eAmt')].reduce((t, e) => t + (Number(e.value) || 0), 0), tot = Number(card.querySelector('.eRcptTotal').value) || 0;
-  box.textContent = `内訳 ${ps.length + 1}つ・申請する合計 ${sum.toLocaleString()}円` + (tot ? `（領収書 ${tot.toLocaleString()}円のうち。経費にしない分 ${(tot - sum).toLocaleString()}円）` : '');
+  if (!ps.length) { box.textContent = ''; return; }
+  const sum = ps.reduce((t, p) => t + (Number(p.querySelector('.eAmt').value) || 0), 0), tot = Number(card.querySelector('.eRcptTotal').value) || 0;
+  box.textContent = `内訳 ${ps.length}つ・申請する合計 ${sum.toLocaleString()}円` + (tot ? `（領収書 ${tot.toLocaleString()}円のうち。経費にしない分 ${(tot - sum).toLocaleString()}円）` : '');
 }
 function renumber(sel, name) { const l = document.querySelectorAll(sel); l.forEach((c, i) => { c.querySelector('.ttl2').textContent = l.length > 1 ? `${name} ${i + 1}` : ''; c.querySelector('.del').style.display = l.length > 1 ? '' : 'none'; }); }
 function expSum() { renumber('#eCards .ecard', '経費'); document.querySelectorAll('#eCards .ecard').forEach(expParts); const s = [...document.querySelectorAll('#eCards .eAmt')].reduce((t, e) => t + (Number(e.value) || 0), 0); const n = document.querySelectorAll('#eCards .ecard').length; $('eTotal').textContent = n > 1 ? `${n}件・合計 ${s.toLocaleString()}円` : ''; }
@@ -761,6 +786,7 @@ async function sendExpense() {
       settle: settleValue(d), note: q('.eNote').value.trim(), samePaper: q('.eSame').checked, extra: readExtras(d, errs, t),
       parts: expEdit ? [] : [...d.querySelectorAll('.ePart')].map(r => ({ amount: r.querySelector('.eAmt').value, pj: r.querySelector('.ePj').value, budget: r.querySelector('.eBud').value })),
       receiptTotal: expEdit ? '' : (d.querySelector('.eRcptTotal') || {}).value || '' };
+    if (p.parts.length) { const f = p.parts.shift(); p.amount = f.amount; p.pj = f.pj; p.budget = f.budget; }   // 内訳1が本体、内訳2からを parts に
     p.parts.forEach((x, k) => { if (!(Number(x.amount) > 0) || !x.pj || !x.budget) errs.push(t + `内訳${k + 2}：金額・PJ・予算元を入れてください`); else if (/レンタカー|ガソリン/.test(x.budget)) errs.push(t + `内訳${k + 2}：レンタカー・ガソリンは「🚃 交通費」で申請してください`); });
     if (p.parts.length && Number(p.receiptTotal) > 0 && Number(p.receiptTotal) < [p.amount].concat(p.parts.map(x => x.amount)).reduce((a, b) => a + (Number(b) || 0), 0)) errs.push(t + '内訳の合計が領収書の合計金額より多くなっています');
     // 管理者は 名前・月・金額・PJ・予算元 だけでよい（社員立替を選んだときは社員も）
