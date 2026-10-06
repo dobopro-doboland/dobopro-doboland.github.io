@@ -239,7 +239,7 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.10</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.12</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -396,8 +396,8 @@ function applyInit(init) {
   INIT = init;
   // 画面とサーバーの番号が違うとき（古い画面のまま）は知らせる
   const appV = $('verApp').textContent;
-  if (/v1.10/.test(appV) && init.version) $('verApp').textContent = init.version;
-  $('verWarn').innerHTML = init.version && !/v1.10/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
+  if (/v1.12/.test(appV) && init.version) $('verApp').textContent = init.version;
+  $('verWarn').innerHTML = init.version && !/v1.12/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
   document.body.classList.toggle('adm', ADM());
   $('admBar').style.display = ADM() ? 'block' : 'none';
   if (ADM()) {
