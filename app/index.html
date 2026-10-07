@@ -239,7 +239,7 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.13</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.14</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -322,6 +322,7 @@ const B = document.body.dataset;
 let INIT = null, HIST = null, actEdit = null, expEdit = null;
 const ADM = () => !!(INIT && INIT.admin);
 const FYM = [9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8];
+const mon = d => (d ? Number(String(d).slice(5, 7)) + '月' : '');   // 申請月の表示（交通費・経費）
 const fyIdx = d => (Number(String(d).slice(5, 7)) + 3) % 12;
 const fyYm = m => `${m >= 9 ? INIT.fy : INIT.fy + 1}-${pad(m)}`;
 
@@ -396,8 +397,8 @@ function applyInit(init) {
   INIT = init;
   // 画面とサーバーの番号が違うとき（古い画面のまま）は知らせる
   const appV = $('verApp').textContent;
-  if (/v1.13/.test(appV) && init.version) $('verApp').textContent = init.version;
-  $('verWarn').innerHTML = init.version && !/v1.13/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
+  if (/v1.14/.test(appV) && init.version) $('verApp').textContent = init.version;
+  $('verWarn').innerHTML = init.version && !/v1.14/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
   document.body.classList.toggle('adm', ADM());
   $('admBar').style.display = ADM() ? 'block' : 'none';
   if (ADM()) {
@@ -454,9 +455,19 @@ function dateField(cls, label, val) {
     <div class="ym"><select class="${cls}M"><option value="">月を選ぶ</option>${ymOpts}</select><span class="hint">日付が分からなければ月だけでOK</span></div>
     <input type="date" class="${cls}" value="${val || today()}" min="${monthMin()}" max="${monthMax()}"></div></div>`;
 }
-/** → {date, monthOnly}。管理者で日付が空なら月の1日 */
+/** 申請月の欄（交通費・経費）。値は「2026-10」の形。メンバーは今月だけ、管理者は年度の月から選ぶ */
+function monthField(cls, val) {
+  const cur = today().slice(0, 7), sel = String(val || '').slice(0, 7) || cur;
+  const list = ADM() ? FYM.map(fyYm) : [cur];
+  if (!list.includes(sel)) list.unshift(sel);   // 前の月の申請を修正するとき
+  const opt = ym => `<option value="${ym}"${ym === sel ? ' selected' : ''}>${Number(ym.slice(0, 4))}年${Number(ym.slice(5, 7))}月</option>`;
+  return `<div class="row"><label>申請月</label><div><select class="${cls}">${list.map(opt).join('')}</select>${ADM() ? '' : '<span class="hint">今月の分として申請します</span>'}</div></div>`;
+}
+/** → {date, monthOnly}。申請月の欄（select）は月の1日。管理者で日付が空なら月の1日 */
 function readDate(root, cls) {
-  const d = root.querySelector('.' + cls).value, mEl = root.querySelector('.' + cls + 'M');
+  const el = root.querySelector('.' + cls);
+  if (el && el.tagName === 'SELECT') return { date: el.value ? el.value + '-01' : '', monthOnly: true };
+  const d = el.value, mEl = root.querySelector('.' + cls + 'M');
   if (ADM() && mEl && mEl.value && (!d || d.slice(0, 7) !== mEl.value)) return { date: mEl.value + '-01', monthOnly: true };
   return { date: d, monthOnly: false };
 }
@@ -659,7 +670,7 @@ function addExp(v) {
   d.className = 'card ecard';
   d.innerHTML = `<button class="del" type="button" onclick="this.parentNode.remove();expSum()">削除</button>
     <div class="ttl2"></div>
-    ${dateField('eDate', FC('expense', 'date').label, v.date || (prev ? prev.querySelector('.eDate').value : today()))}
+    ${monthField('eDate', v.date || (prev ? prev.querySelector('.eDate').value : ''))}
     <div class="row eMain"><label>${esc(FC('expense', 'amount').label)}</label><input type="number" class="eAmt yen" inputmode="numeric" min="1" oninput="expSum()" value="${v.amount || ''}"></div>
     <div class="row eMain"><label>${esc(FC('expense', 'pj').label)}</label><select class="ePj">${pjOpts(INIT.pjs.filter(p => p !== 'DL全体'), '選択')}</select></div>
     <div class="row eMain"><label>${esc(FC('expense', 'budget').label)}</label><div><select class="eBud"></select><span class="hint eBudNote"></span></div></div>
@@ -791,7 +802,7 @@ async function sendExpense() {
     if (p.parts.length && Number(p.receiptTotal) > 0 && Number(p.receiptTotal) < [p.amount].concat(p.parts.map(x => x.amount)).reduce((a, b) => a + (Number(b) || 0), 0)) errs.push(t + '内訳の合計が領収書の合計金額より多くなっています');
     // 管理者は 名前・月・金額・PJ・予算元 だけでよい（社員立替を選んだときは社員も）
     const need = ADM() ? [['date', '月'], ['amount', '金額'], ['pj', 'PJ・企画'], ['budget', '予算元']].concat(q('.eSettle').value ? [['settle', '精算方法（社員立替は社員も）']] : [])
-      : [['date', '購入日'], ['amount', '金額'], ['pj', 'PJ・企画'], ['budget', '予算元'], ['store', '支払先・店舗（その他は支払先）'], ['settle', '精算方法（社員立替は社員も）']];
+      : [['date', '申請月'], ['amount', '金額'], ['pj', 'PJ・企画'], ['budget', '予算元'], ['store', '支払先・店舗（その他は支払先）'], ['settle', '精算方法（社員立替は社員も）']];
     const miss = need.filter(([k]) => !p[k]).map(([, n]) => n);
     const hasFile = q('.eFile').files[0] || (expEdit && expEdit.url);
     if (!hasFile && REQ('expense', 'file')) miss.push('領収書');
@@ -835,7 +846,7 @@ function addTrans(v) {
   const rt = String(v.route || '').split(/\s*(?:→|->|～|〜)\s*/);
   d.innerHTML = `<button class="del" type="button" onclick="this.parentNode.remove();transTotal()">削除</button>
     <div class="ttl2"></div>
-    ${dateField('tDate', FC('transport', 'date').label, v.date || (prev ? prev.querySelector('.tDate').value : today()))}
+    ${monthField('tDate', v.date || (prev ? prev.querySelector('.tDate').value : ''))}
     <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('transport', 'mode').label)}</label><select class="tMode">${opts(INIT.transports, '選択')}</select></div>
     <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('transport', 'route').label)}</label><div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center"><input class="tFrom" placeholder="例：東京" value="${esc(rt[0] || '')}"><span>→</span><input class="tTo" placeholder="例：大原" value="${esc(rt.slice(1).join(' → '))}"></div></div>
     <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('transport', 'trip').label)}</label><select class="tTrip">${ADM() ? '<option value="">（なし）</option>' : ''}<option>片道</option><option>往復</option><option>その他</option></select></div>
@@ -898,7 +909,7 @@ async function sendTransport() {
     const p = { id: transEdit ? transEdit.id : '', date: dt.date, monthOnly: dt.monthOnly, mode: q('.tMode').value, from: q('.tFrom').value.trim(), to: q('.tTo').value.trim(), roundTrip: q('.tTrip').value,
       amount: q('.tAmt').value, split: readSplit(d), settle: settleValue(d), note: q('.tNote').value.trim(), extra: readExtras(d, errs, t) };
     p.route = p.from && p.to ? `${p.from} → ${p.to}` : '';
-    const need = (ADM() ? [['date', '月'], ['amount', '金額']] : [['date', '利用日'], ['mode', '交通手段'], ['from', 'どこから'], ['to', 'どこまで'], ['roundTrip', '片道・往復'], ['amount', '金額']])   // 管理者は名前・月・金額だけでよい
+    const need = (ADM() ? [['date', '月'], ['amount', '金額']] : [['date', '申請月'], ['mode', '交通手段'], ['from', 'どこから'], ['to', 'どこまで'], ['roundTrip', '片道・往復'], ['amount', '金額']])   // 管理者は名前・月・金額だけでよい
       .concat(ADM() && !q('.eSettle').value ? [] : [['settle', '精算方法（社員立替は社員も）']]);
     const miss = need.filter(([k]) => !p[k]).map(([, n]) => n);
     if (ADM() && !!p.from !== !!p.to) miss.push('区間は「どこから」「どこまで」の両方（なしなら両方空）');
@@ -1057,8 +1068,8 @@ function renderHistory() {
     html = (rows.length ? `<p class="hint">${rows.length}件　合計 ${yen(sum)}</p>` : '') + table(['日付', '内容', k === 'sns' ? '投稿' : '', '金額', ''], rows.map(([a, i]) =>
       `<tr><td>${chk('allow', i)}${md(a.date)}</td><td>${k === 'sns' ? `<span class="badge">${esc(/投稿$/.test(a.snsKind) ? a.snsKind : a.snsKind + '投稿')}</span> ` : ''}${esc(a.content)}</td><td>${k === 'sns' ? link(a.url, '開く') : ''}</td><td class="num">${yen(a.amount)}</td><td><button class="mini" onclick="editAllow(${i})">修正</button>${delBtn('allow', i)}</td></tr>`), '記録はありません');
   } else if (k === 'transport') {
-    html = table(['利用日', '手段', '区間', '合計', '内訳', '状態', ''], HIST.transports.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
-      `<tr><td>${x.mine ? chk('trans', i) : ''}${md(x.date)}</td><td>${esc(x.mode)}</td><td>${esc(x.route)}${link(x.url, '領収書')}</td><td class="num">${yen(x.amount)}${x.settle && !/^本人立替/.test(x.settle) ? `<br><span class="hint">${esc(x.settle)}</span>` : ''}</td>
+    html = table(['申請月', '手段', '区間', '合計', '内訳', '状態', ''], HIST.transports.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
+      `<tr><td>${x.mine ? chk('trans', i) : ''}${mon(x.date)}</td><td>${esc(x.mode)}</td><td>${esc(x.route)}${link(x.url, '領収書')}</td><td class="num">${yen(x.amount)}${x.settle && !/^本人立替/.test(x.settle) ? `<br><span class="hint">${esc(x.settle)}</span>` : ''}</td>
        <td>${x.split.map(s => esc(s.name) + ' ' + yen(s.amount)).join('<br>')}${x.mine ? '' : `<br><span class="hint">支払：${esc(x.payer)}</span>`}</td><td><span class="badge ${esc(x.status)}">${esc(x.status)}</span></td>
        <td>${x.mine ? `<button class="mini" onclick="editTrans(${i})">修正</button>${delBtn('trans', i)}` : ''}</td></tr>`), '交通費の記録はありません');
   } else if (k === 'budgetreq') {
@@ -1066,8 +1077,8 @@ function renderHistory() {
       `<tr><td>${md(x.date)}</td><td>${esc(pjL(x.pj))}</td><td>${esc(x.item)}<br><span class="hint">${esc(x.purpose)}</span></td><td class="num">${yen(x.amount)}</td><td>${esc(x.month)}</td>
        <td><span class="badge">${esc(x.status)}</span></td><td>${x.status === '承認' || x.status === '却下' ? '' : `<button class="mini" onclick="editBud(${i})">修正</button>${delBtn('bud', i)}`}</td></tr>`), '追加予算の申請はありません');
   } else {
-    html = table(['購入日', '金額', 'PJ・企画', '予算元', '支払先', '精算', '状態', ''], HIST.expenses.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
-      `<tr><td>${chk('expense', i)}${md(x.date)}</td><td class="num">${yen(x.amount)}</td><td>${esc(pjL(x.pj))}</td><td>${esc(x.budget)}</td>
+    html = table(['申請月', '金額', 'PJ・企画', '予算元', '支払先', '精算', '状態', ''], HIST.expenses.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
+      `<tr><td>${chk('expense', i)}${mon(x.date)}</td><td class="num">${yen(x.amount)}</td><td>${esc(pjL(x.pj))}</td><td>${esc(x.budget)}</td>
        <td>${esc(x.store)}${link(x.url, '領収書')}${x.receipt && x.receipt !== x.url ? link(x.receipt, 'レシート') : ''}</td><td>${esc(x.settle)}</td><td><span class="badge ${esc(x.status)}">${esc(x.status)}</span></td>
        <td><button class="mini" onclick="editExp(${i})">修正</button>${delBtn('expense', i)}</td></tr>`), '経費の記録はありません');
   }
