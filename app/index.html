@@ -149,9 +149,7 @@
     <div class="edit-banner" id="grpEdit">✏️ まとめ申請を修正中です（保存すると、前の分は参加者全員の給与タブから消えて、この内容で入れ直します）。<button class="mini" onclick="cancelGroupEdit()">修正をやめる</button></div>
     <div class="bar"><span></span><button class="btn" id="grpSubmit" onclick="sendGroup()">まとめて申請</button></div>
     <div id="grpMsg"></div>
-    <h2>これまでのまとめ申請（修正・削除）</h2>
-    <p class="hint">自分がリーダーの定例で、今月まとめて申請した分です。時間や参加者をまちがえたときは「修正」から直してください。</p>
-    <div id="grpHist"><p class="hint">読み込み中…</p></div>
+    <p class="hint">まとめて申請した定例を直すときは、上の「修正」タブで表示を「定例（リーダーのまとめ申請）」にしてください。</p>
   </div>
 
   <!-- 交通費 -->
@@ -233,7 +231,7 @@
   <div class="pane" id="p-history">
     <div class="filter">
       <label style="margin:0">表示</label>
-      <select id="hKind" onchange="renderHistory()"><option value="activity">稼働時間</option><option value="genba">現地活動費</option><option value="sns">SNS投稿</option><option value="transport">交通費</option><option value="expense">経費</option><option value="budgetreq">追加予算</option></select>
+      <select id="hKind" onchange="renderHistory()"><option value="activity">稼働時間</option><option value="genba">現地活動費</option><option value="sns">SNS投稿</option><option value="transport">交通費</option><option value="expense">経費</option><option value="group">定例（リーダーのまとめ申請）</option><option value="budgetreq">追加予算</option></select>
       <label style="margin:0">月</label>
       <select id="hMonth" onchange="renderHistory()"><option value="">すべて</option></select>
       <button class="mini" onclick="loadHistory()">再読み込み</button>
@@ -243,7 +241,7 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.15</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.16</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -401,8 +399,8 @@ function applyInit(init) {
   INIT = init;
   // 画面とサーバーの番号が違うとき（古い画面のまま）は知らせる
   const appV = $('verApp').textContent;
-  if (/v1.15/.test(appV) && init.version) $('verApp').textContent = init.version;
-  $('verWarn').innerHTML = init.version && !/v1.15/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
+  if (/v1.16/.test(appV) && init.version) $('verApp').textContent = init.version;
+  $('verWarn').innerHTML = init.version && !/v1.16/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
   document.body.classList.toggle('adm', ADM());
   $('admBar').style.display = ADM() ? 'block' : 'none';
   if (ADM()) {
@@ -442,7 +440,6 @@ function go(p) {
   document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
   document.querySelectorAll('.pane').forEach(el => el.classList.toggle('on', el.id === 'p-' + p));
   if (p === 'history') loadHistory();
-  if (p === 'group') loadGroupHist();
 }
 function onMember(first) {
   HIST = null;
@@ -684,8 +681,6 @@ function addExp(v) {
       <div class="eParts"></div><button class="mini ePartBtn" type="button" onclick="addExpPart(this.closest('.ecard'))">＋ 内訳に分ける</button>
       <div class="eTotalRow" style="display:none;margin-top:6px"><label class="opt">領収書の合計金額（経費にできない分も含む）</label><input type="number" class="eRcptTotal yen" inputmode="numeric" min="1" placeholder="例：5000" oninput="expSum()"></div>
       <div class="hint ePartSum"></div></div></div>
-    <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('expense', 'store').label)}</label><div><select class="eStore">${opts(INIT.stores, '選択')}</select>
-      <input class="eStoreO" placeholder="支払先を記入（店名でなくてもOK）" style="display:none;margin-top:4px"></div></div>
     <div class="row"><label class="${ADM() ? 'opt' : ''}">${esc(FC('expense', 'settle').label)}</label><div><select class="eSettle">${opts(INIT.settles, ADM() ? '（空なら本人立替）' : '選択')}</select>
       <select class="eStaff" style="display:none;margin-top:4px">${opts(INIT.staff || [], '払った社員を選ぶ')}</select><div class="hint eSetInfo"></div></div></div>
     <div class="row" style="${SHOW('expense', 'file') || ADM() ? '' : 'display:none'}"><label class="${!REQ('expense', 'file') ? 'opt' : ''}">${esc(FC('expense', 'file').label)}<span class="eFileNote"></span></label><input type="file" class="eFile" accept="image/*,application/pdf"></div>
@@ -696,13 +691,11 @@ function addExp(v) {
   $('eCards').appendChild(d);
   const q = c => d.querySelector(c);
   q('.ePj').onchange = () => setBudgetOpts(d);
-  q('.eStore').onchange = () => { const o = q('.eStore').value === 'その他'; q('.eStoreO').style.display = o ? '' : 'none'; if (!o) q('.eStoreO').value = ''; };
   q('.eSettle').onchange = () => onSettle(d);
   q('.eSame').onchange = () => { q('.eRcpt').disabled = q('.eSame').checked; };
   const pick = (sel, val) => { if (val) q(sel).value = val; };
   pick('.ePj', v.pj || (prev ? prev.querySelector('.ePj').value : (me ? me.pj : '')));
   setBudgetOpts(d, v.budget || (prev && !v.pj ? prev.querySelector('.eBud').value : ''));
-  if (v.store) setStore(d, v.store);
   if (v.settle) setSettle(d, v.settle); else if (prev) { q('.eSettle').value = prev.querySelector('.eSettle').value; q('.eStaff').value = prev.querySelector('.eStaff').value; onSettle(d); }
   if (v.id) {
     q('.eSame').checked = !!v.samePaper; q('.eRcpt').disabled = !!v.samePaper;
@@ -798,7 +791,6 @@ async function sendExpense() {
     const q = c => d.querySelector(c), t = cards.length > 1 ? `経費${i + 1}：` : '';
     const dt = readDate(d, 'eDate');
     const p = { id: expEdit ? expEdit.id : '', date: dt.date, monthOnly: dt.monthOnly, pj: q('.ePj').value, budget: q('.eBud').value, amount: q('.eAmt').value,
-      store: q('.eStore').value === 'その他' ? (q('.eStoreO').value.trim() ? `その他（${q('.eStoreO').value.trim()}）` : '') : q('.eStore').value,
       settle: settleValue(d), note: q('.eNote').value.trim(), samePaper: q('.eSame').checked, extra: readExtras(d, errs, t),
       parts: expEdit ? [] : [...d.querySelectorAll('.ePart')].map(r => ({ amount: r.querySelector('.eAmt').value, pj: r.querySelector('.ePj').value, budget: r.querySelector('.eBud').value })),
       receiptTotal: expEdit ? '' : (d.querySelector('.eRcptTotal') || {}).value || '' };
@@ -807,7 +799,7 @@ async function sendExpense() {
     if (p.parts.length && Number(p.receiptTotal) > 0 && Number(p.receiptTotal) < [p.amount].concat(p.parts.map(x => x.amount)).reduce((a, b) => a + (Number(b) || 0), 0)) errs.push(t + '内訳の合計が領収書の合計金額より多くなっています');
     // 管理者は 名前・月・金額・PJ・予算元 だけでよい（社員立替を選んだときは社員も）
     const need = ADM() ? [['date', '月'], ['amount', '金額'], ['pj', 'PJ・企画'], ['budget', '予算元']].concat(q('.eSettle').value ? [['settle', '精算方法（社員立替は社員も）']] : [])
-      : [['date', '申請月'], ['amount', '金額'], ['pj', 'PJ・企画'], ['budget', '予算元'], ['store', '支払先・店舗（その他は支払先）'], ['settle', '精算方法（社員立替は社員も）']];
+      : [['date', '申請月'], ['amount', '金額'], ['pj', 'PJ・企画'], ['budget', '予算元'], ['settle', '精算方法（社員立替は社員も）']];
     const miss = need.filter(([k]) => !p[k]).map(([, n]) => n);
     const hasFile = q('.eFile').files[0] || (expEdit && expEdit.url);
     if (!hasFile && REQ('expense', 'file')) miss.push('領収書');
@@ -815,7 +807,7 @@ async function sendExpense() {
     if (REQ('expense', 'note') && !p.note) miss.push(FC('expense', 'note').label);
     if (miss.length) errs.push(t + '未入力：' + miss.join('、'));
     else if (!inMonth_(p.date)) errs.push(t + MONTH_NG());
-    if (/レンタカー|ガソリン/.test(p.store + ' ' + p.budget)) errs.push(t + 'レンタカー・ガソリンは（現地での分も）「🚃 交通費」で申請してください');
+    if (/レンタカー|ガソリン/.test(p.budget)) errs.push(t + 'レンタカー・ガソリンは（現地での分も）「🚃 交通費」で申請してください');
     p._d = d;
     return p;
   });
@@ -1024,21 +1016,30 @@ function grpApplyAll() { document.querySelectorAll('#grpMembers .gRow').forEach(
 function readGroup() { return [...document.querySelectorAll('#grpMembers .gRow')].filter(r => r.querySelector('.gOn2').checked).map(r => ({ name: r.dataset.name, minutes: Number(r.querySelector('.gMin').value) || 0, next: r.querySelector('.gNext').value.trim() })); }
 function grpSum() { const l = readGroup(); $('grpTotal').textContent = `${l.length}人` + (l.some(x => !x.minutes) ? '（時間が空の人がいます）' : ''); }
 /* ---------- 定例のまとめ申請の修正・削除 ---------- */
-let GRP_HIST = [], GRP_EDIT = null;
-function loadGroupHist() {
-  if (!INIT || !member()) return;
-  $('grpHist').innerHTML = '<p class="hint">読み込み中…</p>';
-  google.script.run.withSuccessHandler(list => {
-    GRP_HIST = (list || []).filter(g => inMonth_(g.date));
-    $('grpHist').innerHTML = GRP_HIST.length ? `<table class="list"><tr><th>日付</th><th>定例</th><th>参加者</th><th></th></tr>` + GRP_HIST.map((g, i) =>
+let GRP_HIST = null, GRP_EDIT = null;
+/** 修正タブ：定例のまとめ申請（自分がリーダーの定例。管理者は全部）の一覧 */
+function renderGroupHist() {
+  if (GRP_HIST === null) {
+    $('hList').innerHTML = '<p class="hint">読み込み中…</p>';
+    GRP_HIST = [];
+    google.script.run.withSuccessHandler(list => { GRP_HIST = (list || []).filter(g => inMonth_(g.date)); renderGroupHist(); })
+      .withFailureHandler(e => { GRP_HIST = null; $('hList').innerHTML = `<p class="hint">読み込めませんでした：${esc(e.message)}</p>`; }).getGroupHistory();
+    return;
+  }
+  const mf = $('hMonth').value;
+  const rows = GRP_HIST.map((g, i) => [g, i]).filter(([g]) => !mf || monthOf(g.date) == mf);
+  $('bulkDel').style.display = 'none';
+  $('hList').innerHTML = `<p class="hint">自分がリーダーの定例で、今月まとめて申請した分です（管理者はすべての定例）。「修正」で直すと、前の分は参加者全員の給与タブから消えて入れ直されます。</p>` +
+    table(['日付', '定例', '参加者', ''], rows.map(([g, i]) =>
       `<tr><td>${md(g.date)}</td><td>${esc(g.category)}<br><span class="hint">${esc(g.content)}</span></td><td>${g.members.length}人<br><span class="hint">${g.members.map(x => esc(String(x.name).replace(/^[^\p{L}\p{N}]+/u, '')) + ' ' + x.minutes + '分').join('、')}</span></td>
-       <td><button class="mini" onclick="editGroup(${i})">修正</button> <button class="mini del" onclick="delGroup(${i})">削除</button></td></tr>`).join('') + '</table>' : '<p class="hint">今月のまとめ申請はまだありません。</p>';
-  }).withFailureHandler(e => { $('grpHist').innerHTML = `<p class="hint">読み込めませんでした：${esc(e.message)}</p>`; }).getGroupHistory();
+       <td><button class="mini" onclick="editGroup(${i})">修正</button> <button class="mini del" onclick="delGroup(${i})">削除</button></td></tr>`), 'まとめ申請した定例はありません（リーダーの定例だけ表示されます）');
 }
+function loadGroupHist() { GRP_HIST = null; if ($('hKind').value === 'group') renderGroupHist(); }
 function editGroup(i) {
   const g = GRP_HIST[i];
   if (!g) return;
   GRP_EDIT = g;
+  go('group');
   $('grpCat').value = g.category; $('grpDate').value = g.date; $('grpContent').value = g.content; $('grpUrl').value = g.url;
   $('grpMembers').innerHTML = '';
   renderGroupMembers();
@@ -1055,9 +1056,10 @@ function cancelGroupEdit() { GRP_EDIT = null; $('grpEdit').style.display = 'none
 function delGroup(i) {
   const g = GRP_HIST[i];
   if (!g || !confirm(`${md(g.date)}の「${g.category}」（${g.members.length}人分）を削除します。参加者全員の給与タブから消えます。よろしいですか？`)) return;
-  msg('grpMsg', 'warn', `${g.members.length}人分を削除中…`);
+  msg('hMsg', 'warn', `${g.members.length}人分を削除中…`);
   google.script.run.withSuccessHandler(rs => {
     const ng = rs.filter(r => !r.ok);
+    msg('hMsg', ng.length ? 'warn' : 'ok', ng.length ? '削除しました（見つからなかった人：' + ng.map(r => r.name).join('、') + '）' : '削除しました');
     msg('grpMsg', ng.length ? 'warn' : 'ok', ng.length ? '削除しました（見つからなかった人：' + ng.map(r => r.name).join('、') + '）' : '削除しました');
     if (GRP_EDIT === g) cancelGroupEdit();
     loadGroupHist();
@@ -1091,6 +1093,7 @@ function sendGroup() {
 function loadHistory() {
   if (!member()) { $('hList').innerHTML = ''; return msg('hMsg', 'warn', ADM() ? '上の「代理で入力するメンバー」を選んでください' : 'メンバーを選択してください'); }
   msg('hMsg', 'warn', '読み込み中…');
+  GRP_HIST = null;
   google.script.run.withSuccessHandler(h => { HIST = h; msg('hMsg'); renderHistory(); })
     .withFailureHandler(e => msg('hMsg', 'ng', 'エラー：' + e.message)).getHistory(member());
 }
@@ -1106,6 +1109,7 @@ function renderHistory() {
   $('bulkDel').style.display = ADM() ? '' : 'none';
   const mf = $('hMonth').value, k = $('hKind').value;
   const inMonth = d => !mf || monthOf(d) == mf;
+  if (k === 'group') return renderGroupHist();
   const grp = c => /MTG|定例会|定例$|本幹部会/.test(c) && !/定例除く/.test(c);
   let html = '';
   if (k === 'activity') {
@@ -1127,9 +1131,9 @@ function renderHistory() {
       `<tr><td>${md(x.date)}</td><td>${esc(pjL(x.pj))}</td><td>${esc(x.item)}<br><span class="hint">${esc(x.purpose)}</span></td><td class="num">${yen(x.amount)}</td><td>${esc(x.month)}</td>
        <td><span class="badge">${esc(x.status)}</span></td><td>${x.status === '承認' || x.status === '却下' ? '' : `<button class="mini" onclick="editBud(${i})">修正</button>${delBtn('bud', i)}`}</td></tr>`), '追加予算の申請はありません');
   } else {
-    html = table(['申請月', '金額', 'PJ・企画', '予算元', '支払先', '精算', '状態', ''], HIST.expenses.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
+    html = table(['申請月', '金額', 'PJ・企画', '予算元', '領収書', '精算', '状態', ''], HIST.expenses.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
       `<tr><td>${chk('expense', i)}${mon(x.date)}</td><td class="num">${yen(x.amount)}</td><td>${esc(pjL(x.pj))}</td><td>${esc(x.budget)}</td>
-       <td>${esc(x.store)}${link(x.url, '領収書')}${x.receipt && x.receipt !== x.url ? link(x.receipt, 'レシート') : ''}</td><td>${esc(x.settle)}</td><td><span class="badge ${esc(x.status)}">${esc(x.status)}</span></td>
+       <td>${link(x.url, '領収書')}${x.receipt && x.receipt !== x.url ? link(x.receipt, 'レシート') : ''}</td><td>${esc(x.settle)}</td><td><span class="badge ${esc(x.status)}">${esc(x.status)}</span></td>
        <td><button class="mini" onclick="editExp(${i})">修正</button>${delBtn('expense', i)}</td></tr>`), '経費の記録はありません');
   }
   $('hList').innerHTML = html;
@@ -1184,14 +1188,14 @@ document.addEventListener('keydown', e => { if ((e.key === 'ArrowUp' || e.key ==
 <script>
 /* ---------- パイナップル：写真は送る前に小さくする（通信量と待ち時間を減らす） ---------- */
 async function pineShrink(file) {
-  if (!/^image\/(jpeg|png|webp|heic|heif)/.test(file.type) || file.size < 700 * 1024 || !window.createImageBitmap) return null;
+  if (!/^image\/(jpeg|png|webp|heic|heif)/.test(file.type) || file.size < 300 * 1024 || !window.createImageBitmap) return null;   // 300KBより大きい写真は小さくしてから送る
   try {
     const bmp = await createImageBitmap(file);
-    const s = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
+    const s = Math.min(1, 1400 / Math.max(bmp.width, bmp.height));   // 長い辺1400px（領収書の字は読める）
     const c = document.createElement('canvas');
     c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
     c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.72));
     return blob && blob.size < file.size ? blob : null;
   } catch (e) { return null; }
 }
