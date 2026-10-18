@@ -3,82 +3,57 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>DOBOLAND マイページ</title>
+<title>DOBOLAND 招待コード</title>
 <style>
   :root {
     --bg: #f4f6f8; --card: #ffffff; --ink: #1f2933; --sub: #5f6b7a; --line: #e3e8ee;
-    --pri: #0b6b3a; --pri-soft: #d9f2e3; --blue: #0b4a99; --blue-soft: #dbe9fb;
-    --warn: #7a5c00; --warn-soft: #fff2cc; --bad: #a50e0e; --bad-soft: #f9d6d5; --grey-soft: #eeeeee;
+    --pri: #0b6b3a; --bad: #a50e0e; --bad-soft: #f9d6d5;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
-  header { background: var(--pri); color: #fff; padding: 14px 16px; position: sticky; top: 0; z-index: 2; }
+  header { background: var(--pri); color: #fff; padding: 14px 16px; }
   header h1 { margin: 0; font-size: 17px; letter-spacing: .02em; }
   header small { opacity: .85; }
-  nav { display: flex; background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 52px; z-index: 2; }
-  nav button { flex: 1; border: 0; background: none; padding: 11px 4px; font: inherit; color: var(--sub); border-bottom: 3px solid transparent; }
-  nav button.on { color: var(--pri); border-bottom-color: var(--pri); font-weight: 700; }
   main { padding: 14px 16px 80px; max-width: 640px; margin: 0 auto; }
   .card { background: var(--card); border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
   .card h2 { font-size: 15px; margin: 0 0 8px; }
   .muted { color: var(--sub); font-size: 13px; }
-  .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
-  .row:first-of-type { border-top: 0; }
-  .chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
-  .s-確定, .s-出席, .s-承認, .s-使用済 { background: var(--pri-soft); color: var(--pri); }
-  .s-受付, .s-申請中 { background: var(--blue-soft); color: var(--blue); }
-  .s-本人確認待ち, .s-要確認, .s-仮登録 { background: var(--warn-soft); color: var(--warn); }
-  .s-キャンセル, .s-却下, .s-欠席, .s-失敗 { background: var(--bad-soft); color: var(--bad); }
-  .s-変更済, .s-取消, .s-スキップ, .s-未確認, .s-無効 { background: var(--grey-soft); color: #616161; }
-  .code { font: 700 20px/1.2 ui-monospace, Menlo, monospace; letter-spacing: .08em; }
-  button.btn { border: 0; border-radius: 10px; padding: 10px 14px; font: inherit; font-weight: 700; background: var(--pri); color: #fff; }
-  button.btn.sub { background: #fff; color: var(--pri); border: 1px solid var(--pri); }
-  button.btn.small { padding: 5px 10px; font-size: 13px; }
-  button.btn.danger { background: #fff; color: var(--bad); border: 1px solid var(--bad); }
+  .code { font: 700 30px/1.2 ui-monospace, Menlo, monospace; letter-spacing: .08em; margin: 6px 0 10px; }
+  button.btn, a.btn { display: inline-block; text-decoration: none; text-align: center; border: 0; border-radius: 10px; padding: 10px 14px; font: inherit; font-weight: 700; background: var(--pri); color: #fff; }
+  .btn.sub { background: #fff; color: var(--pri); border: 1px solid var(--pri); }
   button.btn:disabled { opacity: .5; }
   .wide { width: 100%; margin-top: 10px; }
   label.field { display: block; margin: 12px 0 4px; font-weight: 700; font-size: 14px; }
-  input[type=text], select, textarea { width: 100%; padding: 10px; border: 1px solid #cfd8dc; border-radius: 8px; font: inherit; background: #fff; }
+  input[type=text] { width: 100%; padding: 10px; border: 1px solid #cfd8dc; border-radius: 8px; font: inherit; background: #fff; }
   .opts label { display: inline-flex; align-items: center; gap: 4px; margin: 4px 12px 4px 0; }
-  .days label { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; margin: 6px 0; }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .stat { background: var(--bg); border-radius: 10px; padding: 8px; text-align: center; }
-  .stat b { display: block; font-size: 20px; }
   #toast { position: fixed; left: 16px; right: 16px; bottom: 16px; background: #263238; color: #fff; padding: 12px 14px; border-radius: 10px; display: none; z-index: 9; }
   .err { background: var(--bad-soft); color: var(--bad); padding: 10px 12px; border-radius: 8px; }
-  .hidden { display: none; }
 </style>
 </head>
 <body>
-<header><h1>DOBOLAND</h1><small id="who">読みこみ中…</small></header>
-<nav id="tabs" class="hidden">
-  <button data-tab="my" class="on">マイページ</button>
-  <button data-tab="staff" class="hidden" id="tabStaff">運営</button>
-</nav>
+<header><h1>DOBOLAND 招待コード</h1><small id="who">読みこみ中…</small></header>
 <main id="app"><div class="card muted">読みこみ中です…</div></main>
 <div id="toast"></div>
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
 /*
- * DOBOLAND 公式LINE の画面（LIFF）。サーバーは公式LINE管理システムの Webアプリ（doPost）。
- *  ・毎回 LINE の IDトークンを送り、サーバー側で本人確認する（この画面から学生IDや名前を送っても使われない）
- *  ・「運営」タブは権限がある人にだけ出すが、権限の確認はサーバーが毎回行う（隠すだけではない）
+ * DOBOLAND 公式LINE の画面（LIFF）：招待コードだけ（2026-10-18 しぼった）。
+ *  ・はじめての人は、名前・大学を一度だけ登録 → 自分の招待コードが出る
+ *  ・サーバーは公式LINE管理システムの Webアプリ（doPost）。毎回 LINE の IDトークンを送り、サーバー側で本人確認する
+ *  ・出席確認・申込の承認・紹介・交通費割引は、運営がスプレッドシートで行う（この画面にはない）
  *  ・?mock=1 を付けて開くと、架空のデータで画面だけ確認できる（LINE・サーバーにはつながない）
  */
 const CONFIG = {
-  LIFF_ID: '2012058548-UJdwGAWM',            // LIFFアプリのID（開発用。秘密の情報ではない）
-  API_URL: 'https://script.google.com/macros/s/AKfycbyoWqOA83Lf7h_XIWsMkFbW_kVodhi5SRy76r1-rMNCkSrHr_CuVg02mvQcXgtU-2v-/exec', // 公式LINE管理システム（開発）のWebアプリ。新しいデプロイを作ったら変える
+  LIFF_ID: '2012058548-UJdwGAWM',            // LIFFアプリのID（秘密の情報ではない）
+  API_URL: 'https://script.google.com/macros/s/AKfycbyoWqOA83Lf7h_XIWsMkFbW_kVodhi5SRy76r1-rMNCkSrHr_CuVg02mvQcXgtU-2v-/exec', // 公式LINE管理システムのWebアプリ。新しいデプロイを作ったら変える
   CHIBA_FORM_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSe1DVDIN7waZR9HUAEF_G2l8ZFj4Ibb68oHCm6fEs-wMhgzZw/viewform', // 千葉フォーム（回答用のURL）
 };
-const MOCK = new URLSearchParams(location.search).get('mock') === '1';
+const MOCK = new URLSearchParams(location.search).get('mock');
 let ID_TOKEN = '';
-const START_TAB = new URLSearchParams(location.search).get('tab'); // リッチメニューから ?tab=staff で運営の画面を開ける
-let STATE = { me: null, tab: ['my', 'staff'].indexOf(START_TAB) >= 0 ? START_TAB : 'my' };
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const chip = s => `<span class="chip s-${esc(s)}">${esc(s)}</span>`;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', 3500); }
 
 async function call(action, params) {
@@ -108,142 +83,55 @@ async function start() {
   }
 }
 async function reload() {
-  STATE.me = await call('me');
-  if (!STATE.me.registered) return renderRegister();
-  $('#who').textContent = STATE.me.member.name + ' さん（' + STATE.me.member.studentId + '）';
-  $('#tabs').classList.remove('hidden');
-  const staffOk = ['現地スタッフ', '運営管理者'].indexOf(STATE.me.member.role) >= 0;
-  $('#tabStaff').classList.toggle('hidden', !staffOk);
-  if (STATE.tab === 'staff' && !staffOk) STATE.tab = 'my';
-  show(STATE.tab);
-}
-document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => show(b.dataset.tab));
-function show(tab) {
-  STATE.tab = tab;
-  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
-  ({ my: renderMy, staff: renderStaff })[tab]();
+  const me = await call('me');
+  if (!me.registered) return renderRegister();
+  renderCode(me.member);
 }
 
 // ───────── 初回登録 ─────────
 function renderRegister() {
   $('#who').textContent = 'はじめての方';
-  $('#app').innerHTML = `<div class="card"><h2>DOBOLAND に登録</h2>
-    <p class="muted">はじめに一度だけ登録してください。登録すると学生IDと紹介コードが発行されます。</p>
+  $('#app').innerHTML = `<div class="card"><h2>はじめに登録してください（1回だけ）</h2>
+    <p class="muted">登録すると、あなたの招待コードが発行されます。</p>
     <label class="field">氏名（スペースなしのフルネーム）</label><input type="text" id="rName" maxlength="30" placeholder="例：土木太郎">
     <label class="field">大学・学校名</label><input type="text" id="rUniv" maxlength="60">
     <label class="field">DOBOLAND のメンバーですか</label>
     <div class="opts"><label><input type="radio" name="rType" value="既存">既存メンバー</label><label><input type="radio" name="rType" value="新規" checked>新規メンバー</label></div>
     <label class="field"><input type="checkbox" id="rOk"> 入力内容を DOBOLAND の参加管理・連絡に使うことに同意します</label>
-    <button class="btn wide" id="rGo">登録する</button></div>`;
+    <button class="btn wide" id="rGo">登録して招待コードを発行</button></div>`;
   $('#rGo').onclick = e => run(e.target, async () => {
     const name = $('#rName').value.trim();
+    if (!name) throw new Error('氏名を入力してください');
     if (/[\s　]/.test(name)) throw new Error('氏名はスペースを入れずに入力してください');
-    const r = await call('register', { name: name, univ: $('#rUniv').value.trim(), type: document.querySelector('[name=rType]:checked').value, consent: $('#rOk').checked });
-    toast('登録しました（' + r.studentId + '）'); await reload();
+    await call('register', { name: name, univ: $('#rUniv').value.trim(), type: document.querySelector('[name=rType]:checked').value, consent: $('#rOk').checked });
+    toast('登録しました'); await reload();
   });
 }
 
-// ───────── マイページ ─────────
-function renderMy() {
-  const me = STATE.me, m = me.member;
-  const byEv = {};
-  me.applications.forEach(a => (byEv[a.eventId] = byEv[a.eventId] || { region: a.region, range: a.range, list: [] }).list.push(a));
-  const apps = Object.keys(byEv).map(k => { const g = byEv[k]; return `<div class="row" style="display:block"><b>${esc(g.region)} ${esc(g.range)}</b>
-      ${g.list.map(a => `<div class="row"><span>${esc(a.dayLabel)}〜 ${chip(a.status)} ${a.attend === '出席' ? chip('出席') : ''}</span></div>`).join('')}</div>`; }).join('') || '<p class="muted">まだ申込はありません。</p>';
-  const formLink = CONFIG.CHIBA_FORM_URL ? `<p><a class="btn small" href="${esc(CONFIG.CHIBA_FORM_URL)}" target="_blank" rel="noopener">千葉の参加申込フォームを開く</a></p>` : '';
-  const ref = me.referrals;
+// ───────── 招待コード ─────────
+function renderCode(m) {
+  $('#who').textContent = m.name + ' さん';
+  const form = CONFIG.CHIBA_FORM_URL ? `<a class="btn sub wide" href="${esc(CONFIG.CHIBA_FORM_URL)}" target="_blank" rel="noopener">千葉の参加申込フォームを開く</a>` : '';
   $('#app').innerHTML = `
-    <div class="card"><h2>あなたの紹介コード</h2><div class="code" id="code">${esc(m.code)}</div>
-      <p class="muted">友だちがその地域に初めて参加するときに、千葉フォームの「招待コード」にこのコードを入れてもらうと、紹介が成立したあと交通費の割引が使えます（紹介した人・された人それぞれ30%、最大5,000円）。</p>
-      <button class="btn small sub" id="copy">コードをコピー</button></div>
-    <div class="card"><h2>申込</h2>${apps}<p class="muted">申込・変更・キャンセルは千葉フォームから（送り直すと新しい内容に置きかわります）。</p>${formLink}</div>
-    <div class="card"><h2>紹介と割引</h2>
-      <div class="row"><span>紹介した</span><span>${ref.asReferrer.length ? ref.asReferrer.map(r => esc(r.region) + ' ' + chip(r.status)).join(' ') : '<span class="muted">なし</span>'}</span></div>
-      <div class="row"><span>紹介された</span><span>${ref.asInvitee.length ? ref.asInvitee.map(r => esc(r.region) + ' ' + chip(r.status)).join(' ') : '<span class="muted">なし</span>'}</span></div>
-      ${me.eligibility.map(x => `<div class="row"><span>${esc(x.label)}：${Math.round(x.rate * 100)}%引きを申請できます</span><button class="btn small" data-disc="${esc(x.eventId)}">申請</button></div>`).join('')}
-      ${me.discounts.map(d => `<div class="row"><span>${esc(d.id)} ${esc(d.range)}（${Math.round(d.rate * 100)}%・上限${esc(d.cap)}円）</span>${chip(d.status)}</div>`).join('')}
-      <p class="muted">割引額＝交通費×割引率（上限5,000円）。精算は運営からの案内にしたがってください。</p></div>`;
-  $('#copy').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(m.code); toast('コピーしました'); };
-  document.querySelectorAll('[data-disc]').forEach(b => b.onclick = e => run(e.target, async () => {
-    const r = await call('requestDiscount', { eventId: b.dataset.disc }); toast('割引を申請しました（' + r.id + '）'); await reload();
-  }));
+    <div class="card"><h2>あなたの招待コード</h2>
+      <div class="code">${esc(m.code)}</div>
+      <button class="btn wide" id="copy">コードをコピー</button>
+      <p class="muted">友だちを誘うときは、このコードを伝えてください。友だちが参加申込フォームの「招待コード」に入れると、紹介として記録されます（交通費の割引の対象になります。くわしくは運営からご案内します）。</p></div>
+    <div class="card"><h2>参加の申込・変更・キャンセル</h2>
+      <p class="muted">参加申込フォームから送ってください。送り直すと、新しい内容に置きかわります。</p>${form}</div>`;
+  $('#copy').onclick = () => {
+    const done = () => toast('コピーしました：' + m.code);
+    if (navigator.clipboard) navigator.clipboard.writeText(m.code).then(done, () => toast('コピーできませんでした。長押しでコピーしてください'));
+    else toast('長押しでコピーしてください');
+  };
 }
 
-// ───────── 運営（権限の確認はサーバーが行う） ─────────
-async function renderStaff() {
-  const admin = STATE.me.member.role === '運営管理者';
-  $('#app').innerHTML = '<div class="card muted">読みこみ中…</div>';
-  try {
-    const evs = await call('staffEvents');
-    let html = `<div class="card"><h2>出席確認</h2>${evs.length ? evs.map(ev => `<div class="row"><span>${esc(ev.region)} ${esc(ev.range)}<br><span class="muted">${ev.people}人</span></span><button class="btn small" data-roster="${esc(ev.eventId)}">開く</button></div>`).join('') : '<p class="muted">近い日程はありません</p>'}<div id="roster"></div></div>`;
-    if (admin) {
-      const [d, pend, refs, discs, notices] = await Promise.all([call('dashboard'), call('pending'), call('referrals'), call('discounts'), call('notices')]);
-      html = `<div class="card"><h2>ダッシュボード</h2><div class="grid">
-          <div class="stat"><b>${d.members}</b>メンバー</div><div class="stat"><b>${d.applications['受付'] + d.applications['本人確認待ち'] + d.applications['要確認']}</b>承認待ち</div>
-          <div class="stat"><b>${d.applications['確定']}</b>確定</div><div class="stat"><b>${d.pendingReferrals}</b>紹介の判定待ち</div>
-          <div class="stat"><b>${d.pendingDiscounts}</b>割引の申請</div><div class="stat"><b>${d.failedNotices}</b>通知の失敗</div></div>
-          <p class="muted">LINE通知：${d.notify.enabled ? 'ON' : 'OFF（送っていません）'}・今月 ${d.notify.used}/${d.notify.limit}通（${esc(d.notify.from)}）</p></div>` + html +
-        `<div class="card"><h2>申込の承認</h2>${pend.length ? pend.map(p => `<div class="row"><span>${esc(p.dayLabel)} ${esc(p.name)} ${chip(p.status)}<br><span class="muted">${esc(p.region)} ${esc(p.range)} ${esc(p.note)}</span></span>
-            <span><button class="btn small" data-set="確定" data-id="${esc(p.id)}">確定</button> <button class="btn small danger" data-set="却下" data-id="${esc(p.id)}">却下</button></span></div>`).join('') : '<p class="muted">ありません</p>'}</div>
-        <div class="card"><h2>紹介の確認（仮登録）</h2>${refs.length ? refs.map(r => `<div class="row"><span>${esc(r.referrer)} → ${esc(r.invitee)}（${esc(r.region)}）<br>${chip(r.judge)} ${chip(r.attend)}</span>
-            ${r.judge === '保留（履歴不明）' ? `<span><button class="btn small" data-ref="初参加" data-id="${esc(r.id)}">初参加</button> <button class="btn small danger" data-ref="対象外（参加歴あり）" data-id="${esc(r.id)}">対象外</button></span>` : ''}</div>`).join('') : '<p class="muted">ありません</p>'}</div>
-        <div class="card"><h2>交通費割引の申請</h2>${discs.length ? discs.map(x => `<div class="row"><span>${esc(x.name)} ${esc(x.range)}<br><span class="muted">${Math.round(x.rate * 100)}%（上限${esc(x.cap)}円）${x.referrer === 'あり' ? '紹介した ' : ''}${x.invitee === 'あり' ? '紹介された' : ''}</span></span>
-            <span><button class="btn small" data-disc2="承認" data-id="${esc(x.id)}">承認</button> <button class="btn small danger" data-disc2="却下" data-id="${esc(x.id)}">却下</button></span></div>`).join('') : '<p class="muted">ありません</p>'}</div>
-        <div class="card"><h2>通知（新しい順）</h2>${notices.slice(0, 20).map(n => `<div class="row"><span>${esc(n.at)} ${esc(n.type)} ${chip(n.status)}<br><span class="muted">${esc(n.to)} ${esc(n.error)}</span></span>
-            ${['失敗', 'スキップ'].indexOf(n.status) >= 0 ? `<button class="btn small sub" data-resend="${esc(n.id)}">再送</button>` : ''}</div>`).join('')}</div>`;
-    }
-    $('#app').innerHTML = html;
-  } catch (e) { $('#app').innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
-  const ask = q => { const r = prompt(q); if (r === null) throw new Error('取り消しました'); return r; };
-  document.querySelectorAll('[data-roster]').forEach(b => b.onclick = e => run(e.target, () => drawRoster(b.dataset.roster)));
-  document.querySelectorAll('[data-set]').forEach(b => b.onclick = e => run(e.target, async () => {
-    const reason = b.dataset.set === '却下' ? ask('却下の理由') : '';
-    await call('setStatus', { appIds: [b.dataset.id], status: b.dataset.set, reason: reason }); toast(b.dataset.set + 'にしました'); renderStaff();
-  }));
-  document.querySelectorAll('[data-ref]').forEach(b => b.onclick = e => run(e.target, async () => {
-    await call('resolveReferral', { id: b.dataset.id, judge: b.dataset.ref, reason: ask('判定の理由（例：本人に確認）') }); toast('判定しました'); renderStaff();
-  }));
-  document.querySelectorAll('[data-disc2]').forEach(b => b.onclick = e => run(e.target, async () => {
-    const reason = b.dataset.disc2 === '却下' ? ask('却下の理由') : '';
-    await call('reviewDiscount', { id: b.dataset.id, decision: b.dataset.disc2, reason: reason }); toast(b.dataset.disc2 + 'しました'); renderStaff();
-  }));
-  document.querySelectorAll('[data-resend]').forEach(b => b.onclick = e => run(e.target, async () => { await call('resendNotice', { id: b.dataset.resend }); toast('再送の予定にしました'); renderStaff(); }));
-}
-async function drawRoster(eventId) {
-  const list = await call('roster', { eventId: eventId });
-  const box = $('#roster');
-  box.innerHTML = '<h2 style="margin-top:12px">参加者</h2>' + (list.map(p => `<div class="row"><span>${esc(p.dayLabel)} ${esc(p.name)} ${chip(p.attend)}</span>
-    <span><button class="btn small" data-att="出席" data-id="${esc(p.id)}">出席</button> <button class="btn small danger" data-att="欠席" data-id="${esc(p.id)}">欠席</button></span></div>`).join('') || '<p class="muted">参加者はいません</p>');
-  box.querySelectorAll('[data-att]').forEach(b => b.onclick = e => run(e.target, async () => {
-    const r = await call('attendance', { appIds: [b.dataset.id], status: b.dataset.att });
-    toast((r.messages || []).join(' ') || '記録しました'); drawRoster(eventId);
-  }));
-}
-
-// ───────── 画面の確認用（?mock=1）：架空のデータ。LINE・サーバーにはつながない ─────────
-const MOCK_DB = {
-  me: { registered: true, member: { studentId: 'STU-00001', name: '架空太郎', univ: '架空大学', type: '既存', code: 'DB-AB2CD3', role: '運営管理者' },
-    applications: [
-      { id: 'APP-1', region: '千葉', day: '2026/11/07', dayLabel: '11/7(土)', range: '11/7〜11/8', eventId: 'CHB-1', status: '確定', attend: '未確認' },
-      { id: 'APP-2', region: '千葉', day: '2026/11/21', dayLabel: '11/21(土)', range: '11/21〜11/23', eventId: 'CHB-2', status: '受付', attend: '未確認' }],
-    referrals: { asReferrer: [{ region: '千葉', status: '確定' }], asInvitee: [] }, discounts: [],
-    eligibility: [{ eventId: 'CHB-1', label: '11/7〜11/8', rate: 0.3 }] },
-};
+// ───────── 画面の確認用（?mock=1：登録済み／?mock=new：はじめての人）。LINE・サーバーにはつながない ─────────
 function mockApi(b) {
   const wait = v => new Promise(r => setTimeout(() => r(v), 150));
-  switch (b.action) {
-    case 'me': return wait(MOCK_DB.me);
-    case 'requestDiscount': return wait({ id: 'DSC-（確認用）' });
-    case 'staffEvents': return wait([{ eventId: 'CHB-1', region: '千葉', range: '11/7〜11/8', people: 2 }]);
-    case 'roster': return wait([{ id: 'APP-1', name: '架空太郎', dayLabel: '11/7(土)', attend: '未確認' }, { id: 'APP-3', name: '架空花子', dayLabel: '11/7(土)', attend: '出席' }]);
-    case 'attendance': return wait({ messages: ['（確認用）記録しました'] });
-    case 'dashboard': return wait({ members: 12, applications: { '受付': 3, '本人確認待ち': 1, '要確認': 1, '確定': 8 }, pendingReferrals: 1, pendingDiscounts: 1, failedNotices: 0, notify: { enabled: false, used: 0, limit: 200, from: '通知履歴' } });
-    case 'pending': return wait([{ id: 'APP-2', name: '架空太郎', region: '千葉', dayLabel: '11/8(日)', range: '11/7〜11/8', status: '受付', note: '' }]);
-    case 'referrals': return wait([{ id: 'REF-1', referrer: '架空太郎', invitee: '架空次郎', region: '千葉', judge: '保留（履歴不明）', attend: '未確認' }]);
-    case 'discounts': return wait([{ id: 'DSC-1', name: '架空花子', range: '11/7〜11/8［CHB-1］', rate: 0.3, cap: 5000, referrer: 'なし', invitee: 'あり' }]);
-    case 'notices': return wait([{ id: 'NTF-1', type: '申込受付', status: 'スキップ', to: 'STU-00001', error: '配信OFF', at: '10/17 09:00' }]);
-    default: return wait({});
-  }
+  if (b.action === 'register') { mockApi.done = true; return wait({ registered: true }); }
+  if (MOCK === 'new' && !mockApi.done) return wait({ registered: false });
+  return wait({ registered: true, member: { name: '架空太郎', code: 'DB-AB2CD3' } });
 }
 
 start();
