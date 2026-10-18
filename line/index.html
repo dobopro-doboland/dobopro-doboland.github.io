@@ -69,7 +69,7 @@
 const CONFIG = {
   LIFF_ID: '2012058548-UJdwGAWM',            // LIFFアプリのID（開発用。秘密の情報ではない）
   API_URL: 'https://script.google.com/macros/s/AKfycbyoWqOA83Lf7h_XIWsMkFbW_kVodhi5SRy76r1-rMNCkSrHr_CuVg02mvQcXgtU-2v-/exec', // 公式LINE管理システム（開発）のWebアプリ。新しいデプロイを作ったら変える
-  CHIBA_FORM_URL: '',                         // 千葉フォーム（公開したら回答用のURLを入れる。空ならリンクを出さない）
+  CHIBA_FORM_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSe1DVDIN7waZR9HUAEF_G2l8ZFj4Ibb68oHCm6fEs-wMhgzZw/viewform', // 千葉フォーム（回答用のURL）
 };
 const MOCK = new URLSearchParams(location.search).get('mock') === '1';
 let ID_TOKEN = '';
