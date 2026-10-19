@@ -242,7 +242,7 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.19</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.20</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -511,7 +511,9 @@ function addItem(day, v) {
       <div class="chips">${[15,30,60,90,120,180].map(x=>`<button type="button" onclick="setMin(this,${x})">${x<60?x+'分':x/60+'時間'}</button>`).join('')}</div></div></div>
     <div class="row"><label class="${ADM() ? 'opt' : ''}">活動区分</label><select class="cat">${opts(cats, ADM() ? '（なし）' : '選択')}</select></div>
     <div class="row" style="${SHOW('work', 'content') ? '' : 'display:none'}">${LBL('work', 'content')}<textarea class="content" placeholder="${PH('work', 'content')}">${esc(v.content || '')}</textarea></div>
-    <div class="row" style="${SHOW('work', 'url') ? '' : 'display:none'}">${LBL('work', 'url')}<input type="url" class="url" placeholder="${PH('work', 'url')}" value="${esc(v.url || '')}"></div>
+    <div class="row" style="${SHOW('work', 'url') ? '' : 'display:none'}">${LBL('work', 'url')}<div><input type="url" class="url" placeholder="${PH('work', 'url')}" value="${esc(v.url || '')}">
+      <div class="hint" style="margin-top:4px">URLがないときは、ファイルを添付（Word・Excel・PowerPoint・PDF・画像など、10MBまで）${v.url ? '。変えるときだけ選択' : ''}</div>
+      <input type="file" class="aFile" accept="${DELIV_ACCEPT}"></div></div>
     ${extrasHtml('work')}`;
   day.querySelector('.items').appendChild(d);
   if (v.category) d.querySelector('.cat').value = v.category;
@@ -528,6 +530,8 @@ function readDays(errs) {
     const date = day.querySelector('.dDate').value;
     const items = [...day.querySelectorAll('.card')].map((c, n) => {
       const it = { minutes: c.querySelector('.min').value, category: c.querySelector('.cat').value, content: c.querySelector('.content').value.trim(), url: c.querySelector('.url').value.trim() };
+      Object.defineProperty(it, '_f', { value: c.querySelector('.aFile'), enumerable: false });   // 送る前にファイルを読む（JSONには入れない）
+      it.hasFile = !!(it._f && it._f.files[0]);
       it.extra = readExtras(c, errs, `${date || '日付なし'} 活動${n + 1}：`);
       return it;
     }).filter(i => i.minutes || i.content || (!ADM() && i.category));
@@ -537,7 +541,20 @@ function readDays(errs) {
 function resetActivity() { $('days').innerHTML = ''; addDay(); actEdit = null; $('aEdit').style.display = 'none'; $('addDayBtn').style.display = ''; $('aSubmit').textContent = '給与タブへ反映'; }
 function cancelActEdit() { resetActivity(); msg('aMsg'); }
 
-function sendActivity() {
+/** 成果物として添付できるファイル */
+const DELIV_ACCEPT = '.doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.txt,.csv,.rtf,.odt,.ods,.odp,.key,.pages,.numbers,.zip,image/*';
+/** 成果物ファイルを読む（写真は小さくしてから。ほかはそのまま、10MBまで） */
+async function readDelivFile(el) {
+  const f = el && el.files[0];
+  if (!f) return null;
+  const ext = (f.name.match(/\.([A-Za-z0-9]+)$/) || [])[1] || '';
+  if (!/^(docx?|xlsx?|pptx?|pdf|txt|csv|rtf|odt|ods|odp|key|pages|numbers|zip|jpe?g|png|gif|webp|heic|heif)$/i.test(ext)) throw new Error(`このファイルは添付できません（${f.name}）。Word・Excel・PowerPoint・PDF・画像などにしてください`);
+  const img = /^image\//.test(f.type);
+  const small = img && typeof pineShrink === 'function' ? await pineShrink(f) : null, src = small || f;
+  if (src.size > 10 * 1024 * 1024) throw new Error(`${f.name}：10MBを超えています。Googleドライブに置いてURLを入れてください`);
+  return new Promise((ok, ng) => { const rd = new FileReader(); rd.onload = () => ok({ name: small ? f.name.replace(/\.\w+$/, '') + '.jpg' : f.name, mime: small ? 'image/jpeg' : (f.type || 'application/octet-stream'), data: String(rd.result).split(',')[1] }); rd.onerror = () => ng(new Error('ファイルを読み込めませんでした')); rd.readAsDataURL(src); });
+}
+async function sendActivity() {
   if (needMember('aMsg')) return;
   const errs = [], days = readDays(errs);
   if (!days.length) errs.push('活動を1件以上入力してください');
@@ -547,12 +564,15 @@ function sendActivity() {
       const t = `${d.date} 活動${n + 1}：`;
       if (!(Number(i.minutes) > 0) || (!ADM() && !i.category)) errs.push(t + (ADM() ? '時間は必須です' : '時間・活動区分は必須です'));   // 管理者は日付と時間だけでよい
       if (REQ('work', 'content') && !i.content) errs.push(t + FC('work', 'content').label + 'は必須です');
-      if (REQ('work', 'url') && !/^https?:\/\/\S+/.test(i.url)) errs.push(t + FC('work', 'url').label + 'は必須です（資料・投稿・議事録などのリンク）');
+      if (REQ('work', 'url') && !i.hasFile && !/^https?:\/\/\S+/.test(i.url)) errs.push(t + FC('work', 'url').label + 'は必須です（資料・投稿・議事録などのリンクか、ファイルの添付）');
+      if (i.url && !/^https?:\/\/\S+/.test(i.url)) errs.push(t + 'URLは https:// から始めてください');
     });
   });
   if (errs.length) return msg('aMsg', 'ng', errs.join('\n'));
-  $('aSubmit').disabled = true; msg('aMsg', 'warn', '反映中…');
+  $('aSubmit').disabled = true; msg('aMsg', 'warn', days.some(d => d.items.some(i => i.hasFile)) ? 'ファイルを送信中…（大きいファイルは少し時間がかかります）' : '反映中…');
   const fail = e => { $('aSubmit').disabled = false; msg('aMsg', 'ng', 'エラー：' + e.message); };
+  try { for (const d of days) for (const i of d.items) { if (i.hasFile) i.file = await readDelivFile(i._f); delete i.hasFile; } }
+  catch (e) { return fail(e); }
   if (actEdit) {
     return google.script.run.withSuccessHandler(res => {
       $('aSubmit').disabled = false;
