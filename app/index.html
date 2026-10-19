@@ -242,7 +242,7 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.18</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.19</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -393,16 +393,17 @@ if (!cachedInit) msg('aMsg', 'warn', '読み込み中…');
   google.script.run.withSuccessHandler(init => {
     try { localStorage.setItem(INIT_KEY, JSON.stringify(init)); } catch (e) { /* 保存できない端末 */ }
     if (!INIT || (!TOUCHED && JSON.stringify(init) !== JSON.stringify(INIT))) applyInit(init, true);
-    else if (init.version && !/v1.18/.test($('verApp').textContent) && init.version !== $('verApp').textContent) $('verWarn').innerHTML = `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。</span><button class="mini" type="button" onclick="pineUpdate()">今すぐ更新</button>`;   // 入力中は画面を作り直さず、お知らせだけ
+    else if (init.version && !APPV_PH.test($('verApp').textContent) && init.version !== $('verApp').textContent) $('verWarn').innerHTML = `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。</span><button class="mini" type="button" onclick="pineUpdate()">今すぐ更新</button>`;   // 入力中は画面を作り直さず、お知らせだけ
   }).withFailureHandler(e => { if (!INIT) msg('aMsg', 'ng', '読み込みエラー：' + (e && e.message || e)); }).getFormInit();
 });
 
+const APPV_PH = new RegExp('%APP_' + 'VERSION%');   // 置き換え前の印（Apps Script の画面で開いたとき）。build.js に置き換えられないよう分けて書く
 function applyInit(init, fresh) {   // fresh＝サーバーから届いた最新（端末に保存していた分ではない）
   INIT = init;
   // 画面とサーバーの番号が違うとき（古い画面のまま）は知らせる
   const appV = $('verApp').textContent;
-  if (/v1.18/.test(appV) && init.version) $('verApp').textContent = init.version;
-  const newer = init.version && !/v1.18/.test(appV) && init.version !== appV;
+  if (APPV_PH.test(appV) && init.version) $('verApp').textContent = init.version;
+  const newer = init.version && !APPV_PH.test(appV) && init.version !== appV;
   $('verWarn').innerHTML = newer ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。</span><button class="mini" type="button" onclick="pineUpdate()">今すぐ更新</button>` : '';
   if (newer && fresh && !TOUCHED) { let tried = false; try { tried = sessionStorage.getItem('pine_upd') === init.version; } catch (e) { /* なし */ } if (!tried) pineUpdate(init.version); }   // 自動で1回だけ更新（同じ版で何度も読み直さない） msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
   document.body.classList.toggle('adm', ADM());
