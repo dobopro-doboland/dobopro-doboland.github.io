@@ -231,17 +231,18 @@
   <div class="pane" id="p-history">
     <div class="filter">
       <label style="margin:0">表示</label>
-      <select id="hKind" onchange="renderHistory()"><option value="activity">稼働時間</option><option value="genba">現地活動費</option><option value="sns">SNS投稿</option><option value="transport">交通費</option><option value="expense">経費</option><option value="group">定例（リーダーのまとめ申請）</option><option value="budgetreq">追加予算</option></select>
+      <select id="hKind" onchange="renderHistory()"><option value="activity">稼働時間</option><option value="genba">現地活動費</option><option value="sns">SNS投稿</option><option value="transport">交通費</option><option value="expense">経費</option><option value="group" id="hKindGroup">定例（リーダーのまとめ申請）</option><option value="budgetreq">追加予算</option></select>
       <label style="margin:0">月</label>
       <select id="hMonth" onchange="renderHistory()"><option value="">すべて</option></select>
       <button class="mini" onclick="loadHistory()">再読み込み</button>
       <button class="mini del" id="bulkDel" style="display:none" onclick="bulkDelete(this)">選んだ記録をまとめて削除</button>
     </div>
+    <div id="hLead" class="hint" style="display:none;margin:6px 0;padding:8px 10px;border:1px solid #f1c232;border-radius:8px;background:#fff8e1"></div>
     <div id="hMsg"></div>
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.17</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.18</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -399,8 +400,8 @@ function applyInit(init) {
   INIT = init;
   // 画面とサーバーの番号が違うとき（古い画面のまま）は知らせる
   const appV = $('verApp').textContent;
-  if (/v1.17/.test(appV) && init.version) $('verApp').textContent = init.version;
-  $('verWarn').innerHTML = init.version && !/v1.17/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
+  if (/v1.18/.test(appV) && init.version) $('verApp').textContent = init.version;
+  $('verWarn').innerHTML = init.version && !/v1.18/.test(appV) && init.version !== appV ? `<br><span style="color:var(--ng)">新しい版（${esc(init.version)}）があります。アプリを閉じて開き直してください</span>` : ''; msg('aMsg'); msg('grpMsg'); $('grpSubmit').disabled = false;
   document.body.classList.toggle('adm', ADM());
   $('admBar').style.display = ADM() ? 'block' : 'none';
   if (ADM()) {
@@ -1026,7 +1027,7 @@ function grpApplyAll() { document.querySelectorAll('#grpMembers .gRow').forEach(
 function readGroup() { return [...document.querySelectorAll('#grpMembers .gRow')].filter(r => r.querySelector('.gOn2').checked).map(r => ({ name: r.dataset.name, minutes: Number(r.querySelector('.gMin').value) || 0, next: r.querySelector('.gNext').value.trim() })); }
 function grpSum() { const l = readGroup(); $('grpTotal').textContent = `${l.length}人` + (l.some(x => !x.minutes) ? '（時間が空の人がいます）' : ''); }
 /* ---------- 定例のまとめ申請の修正・削除 ---------- */
-let GRP_HIST = null, GRP_EDIT = null;
+let GRP_HIST = null, GRP_EDIT = null, HIST_AFTER = null;   // HIST_AFTER：一覧を読み直したあとに出すメッセージ
 /** 修正タブ：定例のまとめ申請（自分がリーダーの定例。管理者は全部）の一覧 */
 function renderGroupHist() {
   if (GRP_HIST === null) {
@@ -1044,6 +1045,27 @@ function renderGroupHist() {
       `<tr><td>${md(g.date)}</td><td>${esc(g.category)}<br><span class="hint">${esc(g.content)}</span></td><td>${g.members.length}人<br><span class="hint">${g.members.map(x => esc(String(x.name).replace(/^[^\p{L}\p{N}]+/u, '')) + ' ' + x.minutes + '分').join('、')}</span></td>
        <td><button class="mini" onclick="editGroup(${i})">修正</button> <button class="mini del" onclick="delGroup(${i})">削除</button></td></tr>`), 'まとめ申請した定例はありません（リーダーの定例だけ表示されます）');
 }
+/** 自分がリーダーの定例（管理者はすべて） */
+function leadCats() { const me = member(); return new Set((INIT && INIT.meetings || []).filter(m => ADM() || (me && m.leader === me)).map(m => m.name)); }
+function leaderOf(cat) { const m = (INIT && INIT.meetings || []).find(x => x.name === cat); return m && m.leader ? String(m.leader).replace(/^[^\p{L}\p{N}]+/u, '') : ''; }
+/** まとめ申請の一覧を読んでから fn を実行 */
+function withGroupHist(fn) {
+  if (GRP_HIST && GRP_HIST.length) return fn();
+  msg('hMsg', 'warn', '定例の記録を読み込み中…');
+  google.script.run.withSuccessHandler(list => { GRP_HIST = (list || []).filter(g => inMonth_(g.date)); msg('hMsg'); fn(); })
+    .withFailureHandler(e => { GRP_HIST = null; msg('hMsg', 'ng', 'エラー：' + e.message); }).getGroupHistory();
+}
+/** 稼働時間の i 行目が入っている、まとめ申請（GRP_HIST の番号） */
+function grpOfAct(i) {
+  const a = HIST.activities[i], n = s => String(s || '').replace(/\s+/g, '').toLowerCase();
+  const hit = g => g.date === String(a.date).slice(0, 10) && g.category === a.category;
+  let k = GRP_HIST.findIndex(g => hit(g) && g.members.some(x => x.name === member() && n(x.full) === n(a.content)));
+  if (k < 0 && GRP_HIST.filter(hit).length === 1) k = GRP_HIST.findIndex(hit);
+  return k;
+}
+const GRP_NOT_FOUND = 'この定例のまとめ申請が見つかりませんでした。上の「定例の一覧を開く」から探してください（今月の分だけ直せます）';
+function editGroupFromAct(i) { withGroupHist(() => { const k = grpOfAct(i); if (k < 0) return msg('hMsg', 'warn', GRP_NOT_FOUND); editGroup(k); }); }
+function delGroupFromAct(i) { withGroupHist(() => { const k = grpOfAct(i); if (k < 0) return msg('hMsg', 'warn', GRP_NOT_FOUND); delGroup(k); }); }
 function loadGroupHist() { GRP_HIST = null; if ($('hKind').value === 'group') renderGroupHist(); }
 function editGroup(i) {
   const g = GRP_HIST[i];
@@ -1069,10 +1091,10 @@ function delGroup(i) {
   msg('hMsg', 'warn', `${g.members.length}人分を削除中…`);
   google.script.run.withSuccessHandler(rs => {
     const ng = rs.filter(r => !r.ok);
-    msg('hMsg', ng.length ? 'warn' : 'ok', ng.length ? '削除しました（見つからなかった人：' + ng.map(r => r.name).join('、') + '）' : '削除しました');
-    msg('grpMsg', ng.length ? 'warn' : 'ok', ng.length ? '削除しました（見つからなかった人：' + ng.map(r => r.name).join('、') + '）' : '削除しました');
+    const note = [ng.length ? 'warn' : 'ok', (ng.length ? '削除しました（見つからなかった人：' + ng.map(r => r.name).join('、') + '）' : '削除しました') + `：${md(g.date)} ${g.category}（${g.members.length}人分）`];
     if (GRP_EDIT === g) cancelGroupEdit();
-    loadGroupHist();
+    msg('grpMsg', note[0], note[1]);
+    if ($('hKind').value === 'group') { msg('hMsg', note[0], note[1]); loadGroupHist(); } else { HIST_AFTER = note; loadHistory(); }
   }).withFailureHandler(e => msg('grpMsg', 'ng', 'エラー：' + e.message)).deleteGroupActivity({ orig: g });
 }
 function sendGroup() {
@@ -1104,7 +1126,7 @@ function loadHistory() {
   if (!member()) { $('hList').innerHTML = ''; return msg('hMsg', 'warn', ADM() ? '上の「代理で入力するメンバー」を選んでください' : 'メンバーを選択してください'); }
   msg('hMsg', 'warn', '読み込み中…');
   GRP_HIST = null;
-  google.script.run.withSuccessHandler(h => { HIST = h; msg('hMsg'); renderHistory(); })
+  google.script.run.withSuccessHandler(h => { HIST = h; if (HIST_AFTER) msg('hMsg', HIST_AFTER[0], HIST_AFTER[1]); else msg('hMsg'); HIST_AFTER = null; renderHistory(); })
     .withFailureHandler(e => msg('hMsg', 'ng', 'エラー：' + e.message)).getHistory(member());
 }
 const monthOf = d => Number(String(d).slice(5, 7));
@@ -1119,13 +1141,17 @@ function renderHistory() {
   $('bulkDel').style.display = ADM() ? '' : 'none';
   const mf = $('hMonth').value, k = $('hKind').value;
   const inMonth = d => !mf || monthOf(d) == mf;
+  const lc = leadCats();
+  $('hKindGroup').hidden = !ADM() && !lc.size;
+  $('hLead').style.display = !ADM() && lc.size && k !== 'group' ? '' : 'none';
+  if (lc.size) $('hLead').innerHTML = `👥 あなたがリーダーの定例（${[...lc].map(esc).join('・')}）は、下の一覧の「修正」「削除」か、<button class="mini" onclick="$('hKind').value='group';renderHistory()">定例の一覧を開く</button> から直せます（参加者全員の分がまとめて直ります）。`;
   if (k === 'group') return renderGroupHist();
   const grp = c => /MTG|定例会|定例$|本幹部会/.test(c) && !/定例除く/.test(c);
   let html = '';
   if (k === 'activity') {
     html = table(['日付', '時間', '区分', '内容', '成果物', ''], HIST.activities.map((a, i) => [a, i]).filter(([a]) => inMonth(a.date)).map(([a, i]) =>
       `<tr><td>${chk('activity', i)}${md(a.date)}</td><td class="num">${a.hours}h</td><td>${esc(a.category)}</td><td>${esc(a.content)}</td><td>${link(a.url, '開く')}</td>
-       <td>${grp(a.category) && !ADM() ? '<span class="hint">リーダーが申請</span>' : `<button class="mini" onclick="editAct(${i})">修正</button>${delBtn('activity', i)}`}</td></tr>`), '稼働時間の記録はありません');
+       <td>${grp(a.category) && !ADM() ? (leadCats().has(a.category) ? `<button class="mini" onclick="editGroupFromAct(${i})">修正</button> <button class="mini del" onclick="delGroupFromAct(${i})">削除</button><br><span class="hint">参加者全員の分</span>` : `<span class="hint">リーダー${leaderOf(a.category) ? '（' + esc(leaderOf(a.category)) + '）' : ''}が修正</span>`) : `<button class="mini" onclick="editAct(${i})">修正</button>${delBtn('activity', i)}`}</td></tr>`), '稼働時間の記録はありません');
   } else if (k === 'genba' || k === 'sns') {
     const rows = HIST.allowances.map((a, i) => [a, i]).filter(([a]) => a.type === k && inMonth(a.date));
     const sum = rows.reduce((s, [a]) => s + Number(a.amount || 0), 0);
