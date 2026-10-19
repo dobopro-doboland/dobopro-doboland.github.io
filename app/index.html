@@ -137,7 +137,8 @@
     </div>
     <div style="margin-top:10px" data-f="group.content"><label></label><textarea id="grpContent"></textarea></div>
     <div class="grid2" style="margin-top:10px">
-      <div data-f="group.url"><label></label><input type="url" id="grpUrl"></div>
+      <div data-f="group.url"><label></label><input type="url" id="grpUrl">
+        <div class="hint" style="margin-top:4px">URLか、ファイルの添付（Word・PDF・画像など、10MBまで）のどちらかでOK</div><input type="file" id="grpFile"></div>
       <div><label>全員の時間（分）</label><div style="display:flex;gap:6px"><input type="number" id="grpMin" min="5" step="5" placeholder="例：60" style="flex:1"><button class="btn sub" type="button" onclick="grpApplyAll()">全員に入れる</button></div></div>
     </div>
     <div id="grpExtra"></div>
@@ -242,7 +243,7 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.20</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.21</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -346,6 +347,7 @@ const LBL = (s, k, opt) => `<label class="${!FC(s, k).fixed && !REQ(s, k) ? 'opt
 const PH = (s, k, def) => esc(FC(s, k).hint || def || '');
 /** data-f のついた欄に表示名・説明を入れ、非表示の欄を隠す */
 function applyForm() {
+  if ($('grpFile')) $('grpFile').accept = DELIV_ACCEPT;
   document.querySelectorAll('[data-f]').forEach(el => {
     const [s, k] = el.dataset.f.split('.');
     const lb = el.querySelector('label');
@@ -1114,7 +1116,7 @@ function editGroup(i) {
   $('grpEdit').style.display = 'block'; $('grpSubmit').textContent = '修正を保存'; msg('grpMsg');
   window.scrollTo(0, 0);
 }
-function cancelGroupEdit() { GRP_EDIT = null; $('grpEdit').style.display = 'none'; $('grpSubmit').textContent = 'まとめて申請'; $('grpContent').value = ''; $('grpUrl').value = ''; $('grpMembers').innerHTML = ''; renderGroupMembers(); msg('grpMsg'); }
+function cancelGroupEdit() { GRP_EDIT = null; $('grpEdit').style.display = 'none'; $('grpSubmit').textContent = 'まとめて申請'; $('grpContent').value = ''; $('grpUrl').value = ''; $('grpFile').value = ''; $('grpMembers').innerHTML = ''; renderGroupMembers(); msg('grpMsg'); }
 function delGroup(i) {
   const g = GRP_HIST[i];
   if (!g || !confirm(`${md(g.date)}の「${g.category}」（${g.members.length}人分）を削除します。参加者全員の給与タブから消えます。よろしいですか？`)) return;
@@ -1127,25 +1129,29 @@ function delGroup(i) {
     if ($('hKind').value === 'group') { msg('hMsg', note[0], note[1]); loadGroupHist(); } else { HIST_AFTER = note; loadHistory(); }
   }).withFailureHandler(e => msg('grpMsg', 'ng', 'エラー：' + e.message)).deleteGroupActivity({ orig: g });
 }
-function sendGroup() {
+async function sendGroup() {
   if (needMember('grpMsg')) return;
   const members = readGroup(), errs = [];
   const p = { leader: member(), date: $('grpDate').value, category: $('grpCat').value, content: $('grpContent').value.trim(), url: $('grpUrl').value.trim(), members, extra: readExtras($('grpExtra'), errs) };
   if (!p.date) errs.push('日付'); else if (!inMonth_(p.date)) return msg('grpMsg', 'ng', MONTH_NG());
   if (!p.category) errs.push('定例');
   if (REQ('group', 'content') && !p.content) errs.push(FC('group', 'content').label);
-  if (REQ('group', 'url') && !/^https?:\/\/\S+/.test(p.url)) errs.push(FC('group', 'url').label);
+  const gFile = !!$('grpFile').files[0];
+  if (REQ('group', 'url') && !gFile && !/^https?:\/\/\S+/.test(p.url)) errs.push(FC('group', 'url').label + '（URLかファイル）');
+  if (p.url && !/^https?:\/\/\S+/.test(p.url)) return msg('grpMsg', 'ng', 'URLは https:// から始めてください');
   if (errs.length) return msg('grpMsg', 'ng', '未入力：' + errs.join('、'));
   if (!members.length) return msg('grpMsg', 'ng', '参加したメンバーにチェックを入れてください');
   if (members.some(x => !x.minutes)) return msg('grpMsg', 'ng', 'チェックした人全員に時間を入れてください');
   const edit = GRP_EDIT;
   if (edit) p.orig = edit;
   $('grpSubmit').disabled = true; msg('grpMsg', 'warn', `${members.length}人分を${edit ? '修正' : '申請'}中…（1人数秒かかります）`);
+  if (gFile) { try { p.file = await readDelivFile($('grpFile')); } catch (e) { $('grpSubmit').disabled = false; return msg('grpMsg', 'ng', e.message); } }
   const run = google.script.run.withSuccessHandler(rs => {
     $('grpSubmit').disabled = false;
     const ok = rs.every(r => r.status === '反映済');
     msg('grpMsg', ok ? 'ok' : 'warn', (edit ? '修正しました\n' : '') + rs.map(r => `${r.name}：${r.minutes}分 → ${r.status}${r.reason ? '（' + r.reason + '）' : ''}`).join('\n'));
     if (edit) { GRP_EDIT = null; $('grpEdit').style.display = 'none'; $('grpSubmit').textContent = 'まとめて申請'; }
+    $('grpFile').value = '';
     loadGroupHist();
   }).withFailureHandler(e => { $('grpSubmit').disabled = false; msg('grpMsg', 'ng', 'エラー：' + e.message); });
   if (edit) run.updateGroupActivity(p); else run.submitGroupActivity(p);
