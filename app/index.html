@@ -243,7 +243,8 @@
     <div id="hList" style="overflow-x:auto"></div>
   </div>
 
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.21</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
+  <div id="bgToasts" style="position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:1000;display:flex;flex-direction:column;gap:6px;max-width:560px;margin:0 auto;pointer-events:none"></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.22</span><span id="verWarn"></span><br><a href="../manual/" target="_blank" rel="noopener">🎬 使い方の動画（30秒）</a></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -335,6 +336,52 @@ function monthMin() { return ADM() ? `${INIT.fy}-09-01` : today().slice(0, 7) + 
 function monthMax() { if (ADM()) return `${INIT.fy + 1}-08-31`; const d = new Date(today() + 'T00:00'); return ymd(new Date(d.getFullYear(), d.getMonth() + 1, 0)); }
 function inMonth_(d) { return !!d && d >= monthMin() && d <= monthMax(); }
 const MONTH_NG = () => ADM() ? '年度（9月〜8月）の日付にしてください' : `今月（${Number(today().slice(5, 7))}月1日〜月末）の日付だけ申請できます`;
+/* ---------- 申請を裏で送る（押したらすぐ次の入力へ。結果は画面の下に出る） ---------- */
+let INPUT_N = 0, BG_BUSY = 0;
+document.addEventListener('input', () => { INPUT_N++; }, true);
+document.addEventListener('change', () => { INPUT_N++; }, true);
+window.addEventListener('beforeunload', e => { if (BG_BUSY) { e.preventDefault(); e.returnValue = ''; } });
+function toast(text, cls) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + cls; d.style.cssText = 'margin:0;box-shadow:0 2px 8px rgba(0,0,0,.15);pointer-events:auto';
+  d.innerHTML = '<button type="button" class="mini" style="float:right;margin-left:6px">×</button><span></span>';
+  d.querySelector('button').onclick = () => d.remove();
+  d.querySelector('span').textContent = text;
+  $('bgToasts').appendChild(d);
+  return d;
+}
+function toastSet(d, text, cls, autoHide) { d.className = 'msg ' + cls; d.querySelector('span').textContent = text; if (autoHide) setTimeout(() => d.remove(), 8000); }
+/**
+ * o = { label, box: 入力カードの入れ物のid（なければ null）, reset: 空の入力に戻す, msgId, call: run => run.xxx(…),
+ *       done: 返事 => { ok, text, keep: [入力欄に戻すカード] }, after: 戻したあとの集計, restore: 入れ物がない画面で失敗したとき戻す }
+ * 入れ物のカードを預かってすぐ空の入力に戻し、反映できなかったカードだけ戻す（カードごと戻すので、選んだファイルも残る）
+ */
+function bgSend(o) {
+  const box = o.box ? $(o.box) : null, held = box ? [...box.children] : [];
+  held.forEach(c => c.remove());
+  o.reset();
+  const fresh = box ? [...box.children] : [], n0 = INPUT_N;
+  msg(o.msgId, 'ok', '受け付けました。反映は裏で続けます（結果は画面の下に出ます）。続けて入力・申請してOKです');
+  const t = toast(`⏳ ${o.label}を反映中…（終わるまでアプリは閉じないでください）`, 'warn');
+  BG_BUSY++;
+  const giveBack = list => {
+    if (!box || !list.length) return;
+    if (INPUT_N === n0) fresh.forEach(c => c.remove());   // まだ何も入力していなければ、空のカードは消してから戻す
+    list.slice().reverse().forEach(c => box.insertBefore(c, box.firstChild));
+    if (o.after) o.after();
+  };
+  o.call(google.script.run.withSuccessHandler(res => {
+    BG_BUSY--; HIST = null;
+    const r = o.done(res), back = (r.keep || []).filter(Boolean);
+    giveBack(back);
+    toastSet(t, (r.ok ? '✅ ' : '⚠️ ') + `${o.label}：${r.text}` + (back.length ? '\n反映できなかった分は入力欄に戻しました' : ''), r.ok ? 'ok' : 'warn', r.ok);
+    if (r.ok && INPUT_N === n0) msg(o.msgId);
+  }).withFailureHandler(e => {
+    BG_BUSY--;
+    if (box) giveBack(held); else if (o.restore) o.restore();
+    toastSet(t, `❌ ${o.label}：エラー ${e && e.message || e}\n入力欄に戻しました。直してもう一度申請してください`, 'ng', false);
+  }));
+}
 function msg(id, cls, text) { $(id).innerHTML = text ? `<div class="msg ${cls}">${esc(text)}</div>` : ''; }
 function member() { return ADM() ? $('admMember').value : $('member').value; }
 
@@ -537,7 +584,9 @@ function readDays(errs) {
       it.extra = readExtras(c, errs, `${date || '日付なし'} 活動${n + 1}：`);
       return it;
     }).filter(i => i.minutes || i.content || (!ADM() && i.category));
-    return { date, items };
+    const o = { date, items };
+    Object.defineProperty(o, '_node', { value: day });   // 送るときは含めない（失敗したら入力欄に戻す）
+    return o;
   }).filter(d => d.items.length);
 }
 function resetActivity() { $('days').innerHTML = ''; addDay(); actEdit = null; $('aEdit').style.display = 'none'; $('addDayBtn').style.display = ''; $('aSubmit').textContent = '給与タブへ反映'; }
@@ -583,17 +632,21 @@ async function sendActivity() {
       if (r.status === '反映済') { resetActivity(); HIST = null; }
     }).withFailureHandler(fail).updateActivity(member(), actEdit, Object.assign({ date: days[0].date }, days[0].items[0]));
   }
-  google.script.run.withSuccessHandler(list => {
-    $('aSubmit').disabled = false;
-    const lines = [];
-    let ok = true;
-    list.forEach(res => {
-      res.results.forEach((r, i) => { if (r.status !== '反映済') ok = false; lines.push(`${res.date.slice(5).replace('-', '/')} ${i + 1}. ${r.status}${r.cell ? '（' + r.cell + '）' : ''}${r.reason ? '：' + r.reason : ''}  ${r.content || ''}`); });
-      if (res.check && !res.check.match) lines.push(`${res.check.month}月：入力行の合計と月計が合いません（要確認）`);
-    });
-    msg('aMsg', ok ? 'ok' : 'warn', lines.join('\n'));
-    if (ok) { resetActivity(); HIST = null; }
-  }).withFailureHandler(fail).submitActivityDays(days);
+  $('aSubmit').disabled = false;
+  const dnodes = days.map(d => d._node);
+  bgSend({ label: `稼働時間（${days.length}日分）`, box: 'days', reset: resetActivity, msgId: 'aMsg', after: sum,
+    call: run => run.submitActivityDays(days),
+    done: list => {
+      const lines = [], keep = [];
+      let ok = true;
+      list.forEach((res, di) => {
+        let bad = false;
+        res.results.forEach((r, i) => { if (r.status !== '反映済') { ok = false; if (r.status !== '重複スキップ') bad = true; } lines.push(`${res.date.slice(5).replace('-', '/')} ${i + 1}. ${r.status}${r.reason ? '：' + r.reason : ''}  ${r.content || ''}`); });
+        if (res.check && !res.check.match) lines.push(`${res.check.month}月：入力行の合計と月計が合いません（要確認）`);
+        if (bad) keep.push(dnodes[di]);
+      });
+      return { ok, text: ok ? '反映しました' : lines.join('\n'), keep };
+    } });
 }
 
 /* ---------- 現地活動費・SNS投稿 ---------- */
@@ -656,6 +709,17 @@ function sendAllowance(t) {
     if (t === 'sns' && !e.kind) errs.push(`${e.date}：種類を選んでください`);
   });
   if (errs.length) return msg(P + 'Msg', 'ng', errs.join('\n'));
+  if (!allowEdit[t]) {
+    const nodes = t === 'genba' ? [...document.querySelectorAll('#gDays .gRowDay')] : [...document.querySelectorAll('#posts .card')];
+    return bgSend({ label: t === 'genba' ? `現地活動費（${entries.length}日）` : `SNS投稿（${entries.length}件）`, box: t === 'genba' ? 'gDays' : 'posts', msgId: P + 'Msg',
+      reset: () => cancelAllowEdit(t, true), after: t === 'genba' ? genbaSum : snsSum,
+      call: run => run.submitAllowance({ member: member(), type: t, region: t === 'genba' ? genbaRegion() : '', entries, id: '' }),
+      done: r => {
+        const ok = r.results.every(x => /済$/.test(x.status));
+        const keep = r.results.map((x, i) => (/済$|重複スキップ/.test(x.status) ? null : nodes[i]));
+        return { ok, text: `${r.days}件（${r.amount.toLocaleString()}円）` + (ok ? 'を申請しました' : '\n' + r.results.map(x => `${x.date.slice(5).replace('-', '/')}：${x.status}${x.reason ? '（' + x.reason + '）' : ''}`).join('\n')), keep };
+      } });
+  }
   $(P + 'Submit').disabled = true; msg(P + 'Msg', 'warn', '申請中…');
   google.script.run.withSuccessHandler(r => {
     $(P + 'Submit').disabled = false;
@@ -856,13 +920,11 @@ async function sendExpense() {
       resetExpense(); HIST = null;
     }).withFailureHandler(fail).submitExpense(list[0]);
   }
-  google.script.run.withSuccessHandler(rs => {
-    $('eSubmit').disabled = false;
-    const ok = rs.every(r => r.ok);
-    msg('eMsg', ok && !rs.some(r => r.needCheck) ? 'ok' : 'warn', rs.map(r => `${rs.length > 1 ? '経費' + r.no + '：' : ''}${r.ok ? '登録しました' + (r.parts > 1 ? `（内訳${r.parts}つ）` : '') + (r.needCheck ? '（要確認）' : '') + (r.fileName ? `　領収書：${r.folder}／${r.fileName}` : '') : 'エラー：' + r.error}`).join('\n'));
-    if (ok) resetExpense(); else rs.filter(r => r.ok).map(r => cards[r.no - 1]).forEach(c => c.remove());
-    HIST = null; expSum();
-  }).withFailureHandler(fail).submitExpenses(list);
+  $('eSubmit').disabled = false;
+  bgSend({ label: `経費（${list.length}件）`, box: 'eCards', reset: resetExpense, msgId: 'eMsg', after: expSum,
+    call: run => run.submitExpenses(list),
+    done: rs => ({ ok: rs.every(r => r.ok), keep: rs.filter(r => !r.ok).map(r => cards[r.no - 1]),
+      text: rs.map(r => `${rs.length > 1 ? '経費' + r.no + '：' : ''}${r.ok ? '登録しました' + (r.parts > 1 ? `（内訳${r.parts}つ）` : '') + (r.needCheck ? '（要確認）' : '') : 'エラー：' + r.error}`).join('\n') }) });
 }
 
 /* ---------- 交通費（複数まとめて） ---------- */
@@ -972,13 +1034,11 @@ async function sendTransport() {
       resetTransport(); HIST = null;
     }).withFailureHandler(fail).submitTransport(list[0]);
   }
-  google.script.run.withSuccessHandler(rs => {
-    $('tSubmit').disabled = false;
-    const ok = rs.every(r => r.ok);
-    msg('tMsg', ok && !rs.some(r => r.needCheck) ? 'ok' : 'warn', rs.map(r => `${rs.length > 1 ? '交通費' + r.no + '：' : ''}${r.ok ? '申請しました' + (r.needCheck ? '（領収書がないため、管理者が確認します）' : '') : 'エラー：' + r.error}`).join('\n'));
-    if (ok) resetTransport(); else rs.filter(r => r.ok).map(r => cards[r.no - 1]).forEach(c => c.remove());
-    HIST = null; transTotal();
-  }).withFailureHandler(fail).submitTransports(list);
+  $('tSubmit').disabled = false;
+  bgSend({ label: `交通費（${list.length}件）`, box: 'tCards', reset: resetTransport, msgId: 'tMsg', after: transTotal,
+    call: run => run.submitTransports(list),
+    done: rs => ({ ok: rs.every(r => r.ok), keep: rs.filter(r => !r.ok).map(r => cards[r.no - 1]),
+      text: rs.map(r => `${rs.length > 1 ? '交通費' + r.no + '：' : ''}${r.ok ? '申請しました' + (r.needCheck ? '（領収書がないため、管理者が確認します）' : '') : 'エラー：' + r.error}`).join('\n') }) });
 }
 function editTrans(i) {
   const x = HIST.transports[i];
@@ -1154,7 +1214,19 @@ async function sendGroup() {
     $('grpFile').value = '';
     loadGroupHist();
   }).withFailureHandler(e => { $('grpSubmit').disabled = false; msg('grpMsg', 'ng', 'エラー：' + e.message); });
-  if (edit) run.updateGroupActivity(p); else run.submitGroupActivity(p);
+  if (edit) return run.updateGroupActivity(p);
+  $('grpSubmit').disabled = false;
+  bgSend({ label: `定例「${p.category}」（${members.length}人分）`, box: null, msgId: 'grpMsg',
+    reset: () => { $('grpContent').value = ''; $('grpUrl').value = ''; $('grpFile').value = ''; $('grpMembers').innerHTML = ''; renderGroupMembers(); },
+    restore: () => {   // 失敗したら入力を戻す（ファイルは選び直し）
+      $('grpCat').value = p.category; $('grpDate').value = p.date; $('grpContent').value = p.content; $('grpUrl').value = p.url;
+      $('grpMembers').innerHTML = ''; renderGroupMembers();
+      p.members.forEach(x => { if (!document.querySelector(`#grpMembers .gRow[data-name="${CSS.escape(x.name)}"]`)) renderGroupMembers(x.name); });
+      document.querySelectorAll('#grpMembers .gRow').forEach(r => { const x = p.members.find(m => m.name === r.dataset.name); r.querySelector('.gOn2').checked = !!x; r.querySelector('.gMin').value = x ? x.minutes : ''; r.querySelector('.gNext').value = x ? x.next || '' : ''; });
+      grpSum();
+    },
+    call: run => run.submitGroupActivity(p),
+    done: rs => { GRP_HIST = null; const ok = rs.every(r => r.status === '反映済'); return { ok, text: ok ? '反映しました' : rs.map(r => `${r.name}：${r.minutes}分 → ${r.status}${r.reason ? '（' + r.reason + '）' : ''}`).join('\n') }; } });
 }
 
 /* ---------- 履歴（修正・削除） ---------- */
