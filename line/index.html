@@ -2,139 +2,26 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>DOBOLAND 招待コード</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>DOBOLAND</title>
 <style>
-  :root {
-    --bg: #f4f6f8; --card: #ffffff; --ink: #1f2933; --sub: #5f6b7a; --line: #e3e8ee;
-    --pri: #0b6b3a; --bad: #a50e0e; --bad-soft: #f9d6d5;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
-  header { background: var(--pri); color: #fff; padding: 14px 16px; }
-  header h1 { margin: 0; font-size: 17px; letter-spacing: .02em; }
-  header small { opacity: .85; }
-  main { padding: 14px 16px 80px; max-width: 640px; margin: 0 auto; }
-  .card { background: var(--card); border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
-  .card h2 { font-size: 15px; margin: 0 0 8px; }
-  .muted { color: var(--sub); font-size: 13px; }
-  .code { font: 700 30px/1.2 ui-monospace, Menlo, monospace; letter-spacing: .08em; margin: 6px 0 10px; }
-  button.btn, a.btn { display: inline-block; text-decoration: none; text-align: center; border: 0; border-radius: 10px; padding: 10px 14px; font: inherit; font-weight: 700; background: var(--pri); color: #fff; }
-  .btn.sub { background: #fff; color: var(--pri); border: 1px solid var(--pri); }
-  button.btn:disabled { opacity: .5; }
-  .wide { width: 100%; margin-top: 10px; }
-  label.field { display: block; margin: 12px 0 4px; font-weight: 700; font-size: 14px; }
-  input[type=text] { width: 100%; padding: 10px; border: 1px solid #cfd8dc; border-radius: 8px; font: inherit; background: #fff; }
-  .opts label { display: inline-flex; align-items: center; gap: 4px; margin: 4px 12px 4px 0; }
-  #toast { position: fixed; left: 16px; right: 16px; bottom: 16px; background: #263238; color: #fff; padding: 12px 14px; border-radius: 10px; display: none; z-index: 9; }
-  .err { background: var(--bad-soft); color: var(--bad); padding: 10px 12px; border-radius: 8px; }
+  :root { --ink: #1f2d4d; --sub: #5f6368; --bg: #fff; --accent: #ee7a2a; }
+  @media (prefers-color-scheme: dark) { :root { --ink: #e8eaed; --sub: #bdc1c6; --bg: #1b1f27; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  main { max-width: 480px; margin: 0 auto; padding: 48px 20px; text-align: center; }
+  h1 { font-size: 20px; margin: 0 0 12px; }
+  p { color: var(--sub); line-height: 1.8; margin: 0 0 24px; }
+  a { display: inline-block; background: #06c755; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 999px; font-weight: bold; }
+  .bar { width: 48px; height: 6px; background: var(--accent); border-radius: 3px; margin: 0 auto 20px; }
 </style>
 </head>
 <body>
-<header><h1>DOBOLAND 招待コード</h1><small id="who">読みこみ中…</small></header>
-<main id="app"><div class="card muted">読みこみ中です…</div></main>
-<div id="toast"></div>
-
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script>
-/*
- * DOBOLAND 公式LINE の画面（LIFF）：招待コードだけ（2026-10-18 しぼった）。
- *  ・はじめての人は、名前・大学を一度だけ登録 → 自分の招待コードが出る
- *  ・サーバーは公式LINE管理システムの Webアプリ（doPost）。毎回 LINE の IDトークンを送り、サーバー側で本人確認する
- *  ・出席確認・申込の承認・紹介・交通費割引は、運営がスプレッドシートで行う（この画面にはない）
- *  ・?mock=1 を付けて開くと、架空のデータで画面だけ確認できる（LINE・サーバーにはつながない）
- */
-const CONFIG = {
-  LIFF_ID: '2012058548-UJdwGAWM',            // LIFFアプリのID（秘密の情報ではない）
-  API_URL: 'https://script.google.com/macros/s/AKfycbyoWqOA83Lf7h_XIWsMkFbW_kVodhi5SRy76r1-rMNCkSrHr_CuVg02mvQcXgtU-2v-/exec', // 公式LINE管理システムのWebアプリ。新しいデプロイを作ったら変える
-  CHIBA_FORM_URL: 'https://docs.google.com/forms/d/e/1FAIpQLSe1DVDIN7waZR9HUAEF_G2l8ZFj4Ibb68oHCm6fEs-wMhgzZw/viewform', // 千葉フォーム（回答用のURL）
-};
-const MOCK = new URLSearchParams(location.search).get('mock');
-let ID_TOKEN = '';
-
-const $ = s => document.querySelector(s);
-const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-function toast(msg) { const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', 3500); }
-
-async function call(action, params) {
-  const body = Object.assign({ action: action, idToken: ID_TOKEN }, params || {});
-  if (MOCK) return mockApi(body);
-  const res = await fetch(CONFIG.API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
-  const out = await res.json();
-  if (!out.ok) throw new Error(out.error || 'エラーが起きました');
-  return out.data;
-}
-async function run(btn, fn) {
-  if (btn) btn.disabled = true;
-  try { await fn(); } catch (e) { toast(e.message); } finally { if (btn) btn.disabled = false; }
-}
-
-async function start() {
-  try {
-    if (!MOCK) {
-      await liff.init({ liffId: CONFIG.LIFF_ID });
-      if (!liff.isLoggedIn()) { liff.login(); return; }
-      ID_TOKEN = liff.getIDToken();
-    }
-    await reload();
-  } catch (e) {
-    $('#app').innerHTML = `<div class="err">開けませんでした：${esc(e.message)}<br>LINEのアプリから開き直してください。</div>`;
-    $('#who').textContent = '';
-  }
-}
-async function reload() {
-  const me = await call('me');
-  if (!me.registered) return renderRegister();
-  renderCode(me.member);
-}
-
-// ───────── 初回登録 ─────────
-function renderRegister() {
-  $('#who').textContent = 'はじめての方';
-  $('#app').innerHTML = `<div class="card"><h2>はじめに登録してください（1回だけ）</h2>
-    <p class="muted">登録すると、あなたの招待コードが発行されます。</p>
-    <label class="field">氏名（スペースなしのフルネーム）</label><input type="text" id="rName" maxlength="30" placeholder="例：土木太郎">
-    <label class="field">大学・学校名</label><input type="text" id="rUniv" maxlength="60">
-    <label class="field">DOBOLAND のメンバーですか</label>
-    <div class="opts"><label><input type="radio" name="rType" value="既存">既存メンバー</label><label><input type="radio" name="rType" value="新規" checked>新規メンバー</label></div>
-    <label class="field"><input type="checkbox" id="rOk"> 入力内容を DOBOLAND の参加管理・連絡に使うことに同意します</label>
-    <button class="btn wide" id="rGo">登録して招待コードを発行</button></div>`;
-  $('#rGo').onclick = e => run(e.target, async () => {
-    const name = $('#rName').value.trim();
-    if (!name) throw new Error('氏名を入力してください');
-    if (/[\s　]/.test(name)) throw new Error('氏名はスペースを入れずに入力してください');
-    await call('register', { name: name, univ: $('#rUniv').value.trim(), type: document.querySelector('[name=rType]:checked').value, consent: $('#rOk').checked });
-    toast('登録しました'); await reload();
-  });
-}
-
-// ───────── 招待コード ─────────
-function renderCode(m) {
-  $('#who').textContent = m.name + ' さん';
-  const form = CONFIG.CHIBA_FORM_URL ? `<a class="btn sub wide" href="${esc(CONFIG.CHIBA_FORM_URL)}" target="_blank" rel="noopener">千葉の参加申込フォームを開く</a>` : '';
-  $('#app').innerHTML = `
-    <div class="card"><h2>あなたの招待コード</h2>
-      <div class="code">${esc(m.code)}</div>
-      <button class="btn wide" id="copy">コードをコピー</button>
-      <p class="muted">友だちを誘うときは、このコードを伝えてください。友だちが参加申込フォームの「招待コード」に入れると、紹介として記録されます（交通費の割引の対象になります。くわしくは運営からご案内します）。</p></div>
-    <div class="card"><h2>参加の申込・変更・キャンセル</h2>
-      <p class="muted">参加申込フォームから送ってください。送り直すと、新しい内容に置きかわります。</p>${form}</div>`;
-  $('#copy').onclick = () => {
-    const done = () => toast('コピーしました：' + m.code);
-    if (navigator.clipboard) navigator.clipboard.writeText(m.code).then(done, () => toast('コピーできませんでした。長押しでコピーしてください'));
-    else toast('長押しでコピーしてください');
-  };
-}
-
-// ───────── 画面の確認用（?mock=1：登録済み／?mock=new：はじめての人）。LINE・サーバーにはつながない ─────────
-function mockApi(b) {
-  const wait = v => new Promise(r => setTimeout(() => r(v), 150));
-  if (b.action === 'register') { mockApi.done = true; return wait({ registered: true }); }
-  if (MOCK === 'new' && !mockApi.done) return wait({ registered: false });
-  return wait({ registered: true, member: { name: '架空太郎', code: 'DB-AB2CD3' } });
-}
-
-start();
-</script>
+<main>
+  <div class="bar"></div>
+  <h1>この画面は終了しました</h1>
+  <p>登録や招待コードは不要になりました。<br>千葉の現地活動の申込・変更は、DOBOLAND 公式LINEのメニューからどうぞ。</p>
+  <a href="https://line.me/R/ti/p/@144xrliq">公式LINEを開く</a>
+</main>
 </body>
 </html>
