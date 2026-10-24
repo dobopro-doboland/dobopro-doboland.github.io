@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#2f6b2a">
-<title>DOBOLAND 参加登録フォーム</title>
+<title>DOBOLAND 参加申込｜パイナップル</title>
 <link rel="icon" href="../app/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../app/icon-180.png">
 <style>
@@ -24,16 +24,22 @@
   .opts .other input[type=text] { padding:6px 8px; font-size:15px; flex:1; min-width:0; }
   .opts.inline { display:flex; gap:8px; flex-wrap:wrap; } .opts.inline label { flex:1; min-width:120px; }
   .sub { margin:6px 0 0 14px; padding-left:12px; border-left:3px solid #cfe3cc; }
-  header { padding:calc(16px + env(safe-area-inset-top)) 0 6px; }
-  header .t1 { font-size:20px; font-weight:bold; color:var(--brand); }
+  header { padding:calc(14px + env(safe-area-inset-top)) 0 6px; display:flex; align-items:center; gap:10px; }
+  header img { width:40px; height:40px; border-radius:10px; }
+  header .t1 { font-size:18px; font-weight:bold; color:var(--brand); }
+  header .t2 { font-size:12px; color:var(--muted); }
   .rule { background:#fffbea; border:1px solid #f5d76e; border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.7; margin:8px 0 14px; }
+  .adm { background:#fef3c7; border:1px solid #f59e0b; border-radius:10px; padding:10px 12px; font-size:13px; margin:8px 0; }
   .grp { border:1px solid var(--line); border-radius:10px; padding:8px 10px; margin-bottom:8px; background:var(--bg); }
-  .grp > label { display:flex; align-items:center; gap:10px; padding:4px 0; margin:0; font-weight:bold; cursor:pointer; }
+  .grp > label { display:flex; align-items:center; gap:10px; padding:4px 0; margin:0; font-weight:bold; cursor:pointer; flex-wrap:wrap; }
   .grp > label input { width:20px; height:20px; margin:0; }
+  .grp .dl { font-weight:normal; font-size:12px; color:var(--muted); }
+  .grp.off { opacity:.55; } .grp.off > label { cursor:default; }
+  .grp.lock { background:#eef3fb; border-color:#c9daf8; }
   .grp .days { margin:4px 0 4px 30px; }
-  .grp .days .note { margin-bottom:4px; }
   .btn { padding:12px 18px; font-size:16px; border-radius:10px; border:1px solid var(--brand); background:var(--brand); color:#fff; cursor:pointer; }
   .btn.sub2 { background:#fff; color:var(--brand); }
+  .btn.ngb { background:#fff; color:var(--ng); border-color:var(--ng); }
   .btn:disabled { opacity:.5; cursor:default; }
   .msg { padding:10px; border-radius:8px; margin:10px 0; font-size:14px; white-space:pre-wrap; }
   .msg.ng { background:#fde8e8; color:var(--ng); } .msg.ok { background:#e7f6ec; color:var(--ok); } .msg.warn { background:#fff4e5; color:var(--warn); }
@@ -44,9 +50,29 @@
 </style>
 </head>
 <body>
-<header><div class="t1">DOBOLAND 参加登録フォーム</div></header>
-<div class="rule">こちらは<b>必ず説明会参加後</b>にご回答ください。<br>最後にインターンシップ契約書（PDF）をアップロードするので、パソコンでの回答を推奨します。</div>
+<header><img src="../app/icon-192.png" alt=""><div><div class="t1">DOBOLAND 参加申込</div><div class="t2">短期インターンの参加申し込み・変更（パイナップル）</div></div></header>
+<div class="rule">こちらは<b>必ず説明会参加後</b>にご回答ください。<br>最後にインターンシップ契約書（PDF）をアップロードするので、パソコンでの回答を推奨します。<br>送信後に出る<b>申込番号</b>は、日程の変更・キャンセルに使います。スクリーンショット等で控えてください。</div>
+<div id="admBox" class="adm hidden">🔑 <b>管理者として代理で入力しています</b>。契約書は任意、非表示・締切後・満員の日程も選べます。</div>
 <div id="msgTop" class="msg warn">読み込み中…</div>
+
+<!-- 申込番号で変更・キャンセル -->
+<details id="editBox" class="rule hidden" style="background:#f8fafc;border-color:var(--line)">
+  <summary style="cursor:pointer;font-weight:bold">申し込んだ内容を変更・キャンセルする（申込番号が必要）</summary>
+  <div style="margin-top:8px">
+    <div class="field"><label class="q req">申込番号（送信後に表示された「AP-」から始まる番号）</label><input type="text" id="eId" placeholder="例）AP-20261024120000-123" autocomplete="off"></div>
+    <div class="row2">
+      <div class="field"><label class="q req">姓（申し込んだとき）</label><input type="text" id="eSei"></div>
+      <div class="field"><label class="q req">名（申し込んだとき）</label><input type="text" id="eMei"></div>
+    </div>
+    <button class="btn sub2" type="button" onclick="loadEdit()">読み込む</button>
+    <div id="msgEdit"></div>
+  </div>
+</details>
+<div id="editBanner" class="adm hidden">✏️ 申込番号 <b id="editIdTxt"></b> を変更中です。直して「確認画面へ」→「この内容で送信」で上書きされます。
+  <div id="lockNote" class="note hidden" style="margin-top:6px"></div>
+  <div class="row2" style="margin-top:8px"><button class="btn sub2" type="button" onclick="location.reload()">変更をやめる</button><button class="btn ngb" type="button" id="cancelBtn" onclick="cancelApp(this)">申込をキャンセルする</button></div>
+  <div id="msgCancel"></div>
+</div>
 
 <div id="formView" class="hidden">
   <h2>あなたについて</h2>
@@ -79,7 +105,7 @@
   <div id="baseBox" class="hidden">
     <div class="field hidden" id="kubunBox"><label class="q req">参加区分</label><div class="opts" id="o_kubun"></div></div>
     <div class="field"><label class="q req">参加希望日程</label>
-      <div class="note" style="margin-bottom:6px">参加したい日程にチェックし、その中で参加する日を選んでください。</div>
+      <div class="note" style="margin-bottom:6px">参加したい日程にチェックし、その中で参加する日を選んでください。締切を過ぎた日程の変更・キャンセルは、運営に連絡してください。</div>
       <div id="groups"></div></div>
   </div>
 
@@ -93,16 +119,30 @@
     <div id="referredBox" class="sub hidden"><input type="text" id="referred" placeholder="紹介した人の名前（複数いるときは「、」で区切る）"></div></div>
 
   <h2>インターンシップ契約書</h2>
-  <div class="field"><label class="q req">インターンシップ契約書の提出（PDF）</label>
+  <!-- ひな形がある地域：入力内容から自動で作る -->
+  <div id="autoBox" class="hidden">
+    <div class="rule" style="margin-top:0">
+      契約書は、入力した内容から<b>自動で作成</b>します（記入・PDFのアップロードは不要です）。<br>
+      下の<b>契約内容</b>を必ず読んでから、欄を入力して「同意します」にチェックしてください。<br>
+      ※契約書に同意いただけない場合、現地活動でのけが等の責任を担保できないため参加いただけません。あらかじめご理解ください。<br>
+      <a class="careerLink" href="#" target="_blank" rel="noopener">株式会社キャリアナビゲーションとは？</a>
+    </div>
+    <div class="field"><label class="q">インターンシップ契約書の契約内容</label>
+      <div id="terms" style="white-space:pre-wrap;font-size:13px;line-height:1.7;max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg)"></div></div>
+    <div id="ctFields"></div>
+    <div class="opts"><label><input type="checkbox" id="agree"><span>インターンシップ契約書の内容を読み、<b>同意します</b>。</span></label></div>
+    <div class="note" id="agreeNote">同意した日時が契約書に記載されます。</div>
+  </div>
+  <div class="field" id="upBox"><label class="q" id="pdfLbl">インターンシップ契約書の提出（PDF）</label>
     <div class="rule" style="margin-top:0">
       <span id="docLinkBox" class="note">先に「参加するインターン」を選ぶと、契約書のリンクが出ます。</span><br>
       リンクの契約書を開いて<br>ファイル〉コピーを作成〉コピーしたドキュメントに記入〉ファイル〉ダウンロード〉PDFドキュメント<br>
       の手順でPDFで保存して、ここでアップロードしてください。<br>
       ※契約書をご提出いただけなかった場合、現地活動でのけが等の責任を担保できないため参加いただけません。あらかじめご理解ください。<br>
-      <a id="career" href="#" target="_blank" rel="noopener">株式会社キャリアナビゲーションとは？</a>
+      <a class="careerLink" href="#" target="_blank" rel="noopener">株式会社キャリアナビゲーションとは？</a>
     </div>
     <input type="file" id="pdf" accept="application/pdf,.pdf">
-    <div class="note">PDF・10MBまで</div>
+    <div class="note" id="pdfNote">PDF・10MBまで</div>
   </div>
 
   <div id="msgForm"></div>
@@ -117,28 +157,34 @@
 </div>
 
 <div id="doneView" class="hidden">
-  <div class="msg ok" style="font-size:16px">送信が完了しました。ありがとうございました。</div>
+  <div class="msg ok" style="font-size:16px" id="doneTitle">送信が完了しました。ありがとうございました。</div>
   <div class="rule" id="doneInfo"></div>
-  <p class="note">内容を直したいときは、同じ氏名でもう一度送信してください（新しい内容に置きかわります）。</p>
+  <p class="note">日程の変更・キャンセルは、このページの上の「申し込んだ内容を変更・キャンセルする」から、申込番号と姓名で行えます。<br>
+    参加したあとの交通費の申請は <a href="../intern/" target="_blank" rel="noopener">交通費補助の申請</a> から。</p>
+  <button class="btn sub2" type="button" onclick="location.reload()">最初の画面に戻る</button>
 </div>
 
+<div style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.24</span><span id="verWarn"></span></div>
+
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbxdM45NLY_vmQAjf99nUEkMEkRL5M8mWaSaTp3UIQT3E0NN4SCohICamyVf_S1Ipl4/exec'; // GitHub Pages などに置くとき用（Webアプリの画面では使わない）
+const API = 'https://script.google.com/macros/s/AKfycbwgDYCaeTYSSm5ozOPx-EK_5JuKouHXV1BlTihzQcA9dxEnI6AVZTv3668xHtgGQ9skCg/exec';
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const msg = (id, cls, text) => { $(id).innerHTML = text ? `<div class="msg ${cls}">${text}</div>` : ''; };
-let INIT = null;
-
-function call(body) {
-  if (window.google && google.script && google.script.run) {
-    return new Promise((ok, ng) => google.script.run
-      .withSuccessHandler(r => r && r.ok ? ok(r.data) : ng(new Error(r ? r.error : '送信できませんでした')))
-      .withFailureHandler(ng).regApi(body));
-  }
-  return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
-    .then(r => { if (!r.ok) throw new Error('通信エラー（' + r.status + '）'); return r.json(); })
-    .then(j => { if (!j.ok) throw new Error(j.error); return j.data; });
+let INIT = null, EDIT = null, SHOWN = [];   // EDIT＝変更中の申込（読み込んだ内容）、SHOWN＝いま画面に出している日程（チェックの data-i の順）
+// パイナップルに管理者でログインしているときは代理入力（同じサイトの保存データを使う）
+let AUTH = null;
+try { const a = JSON.parse(localStorage.getItem('pineapple_auth') || 'null'); if (a && a.admin && a.token) AUTH = a; } catch (e) { AUTH = null; }
+const ADM = () => !!(INIT && INIT.admin);
+async function call(body) {
+  if (AUTH) body.token = AUTH.token;
+  const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error('通信エラー（' + r.status + '）');
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error);
+  return j.data;
 }
+const netErr = e => e.message === 'Failed to fetch' ? '通信できませんでした。電波のよい所でもう一度送信してください' : esc(e.message);
 
 /** 選択肢（ラジオ／チェック）。other=true で「その他：＿＿」 */
 function opts(id, list, multi, other, onchange) {
@@ -151,10 +197,11 @@ const val = id => { const e = document.querySelector(`input[name="${id}"]:checke
 const vals = id => [...document.querySelectorAll(`input[name="${id}"]:checked`)].map(e => e.value);
 const txt = id => ($(id) ? $(id).value.trim() : '');
 const show = (id, on) => $(id).classList.toggle('hidden', !on);
+const setRadio = (id, v) => { document.querySelectorAll(`input[name="${id}"]`).forEach(e => { e.checked = e.value === v; }); };
 
 async function init() {
   try {
-    INIT = await call({ action: 'regInit' });
+    INIT = await call({ action: 'entryInit' });
     const o = INIT.opt;
     opts('major', o.major, false, true); opts('grade', o.grade);
     $('pref').innerHTML = '<option value="">選んでください</option>' + INIT.areas.map(a => `<optgroup label="${esc(a.area)}">${a.prefs.map(p => `<option>${esc(p)}</option>`).join('')}</optgroup>`).join('');
@@ -165,31 +212,72 @@ async function init() {
     opts('kubun', o.kubun);
     opts('referredByHas', ['いない', 'いる'], false, false, () => show('referredByBox', val('referredByHas') === 'いる'));
     opts('referredHas', ['いない', 'いる'], false, false, () => show('referredBox', val('referredHas') === 'いる'));
-    $('career').href = INIT.links.career;
+    document.querySelectorAll('.careerLink').forEach(a => { a.href = INIT.links.career; });
+    show('admBox', ADM()); show('editBox', true); pdfLabel();
+    if (INIT.version && INIT.version !== $('verApp').textContent) $('verWarn').innerHTML = `<br><span style="color:var(--ng)">新しい版（${esc(INIT.version)}）があります。ページを再読み込みしてください</span>`;
     msg('msgTop'); $('msgTop').className = ''; $('formView').classList.remove('hidden');
   } catch (e) {
     $('msgTop').className = 'msg ng'; $('msgTop').textContent = '読み込めませんでした：' + e.message;
   }
 }
+/** 契約書：新規は必須（管理者は任意）、変更のときは出し直す場合だけ */
+function pdfLabel() {
+  const req = !ADM() && !(EDIT && EDIT.hasDoc);
+  $('pdfLbl').classList.toggle('req', req);
+  $('pdfNote').textContent = EDIT && EDIT.hasDoc ? 'PDF・10MBまで（提出済みです。出し直すときだけ選んでください）' : 'PDF・10MBまで';
+}
 
-/** 千葉／和歌山を選んだら、参加区分（千葉だけ）・日程・契約書のリンクを出す */
+/** 千葉／和歌山を選んだら、参加区分（千葉だけ）・日程・契約書のリンクを出す。変更中は締切後の日程を固定で出す */
 function renderBase() {
   const base = val('base');
   show('baseBox', !!base); show('kubunBox', base === '千葉');
-  const list = INIT.schedules.filter(s => s.base === base);
-  $('groups').innerHTML = list.length ? list.map((s, i) => `<div class="grp">
-      <label><input type="checkbox" class="gchk" data-i="${i}" onchange="toggleGroup(this)">${esc(s.label)}</label>
+  const locked = EDIT && EDIT.base === base ? EDIT.locked || [] : [];
+  const lockedNames = locked.map(l => l.name);
+  const mine = EDIT && EDIT.base === base ? EDIT.dates || [] : [];
+  const list = SHOWN = INIT.schedules.filter(s => s.base === base && !lockedNames.includes(s.name));
+  const lockHtml = locked.map(l => `<div class="grp lock"><label><input type="checkbox" checked disabled>${esc(l.label)}<span class="dl">締切後のため変更できません（${esc(l.days.join('・'))}）</span></label></div>`).join('');
+  $('groups').innerHTML = lockHtml + (list.length ? list.map((s, i) => {
+    const off = s.full && !ADM() && !s.days.some(d => mine.includes(d.key));
+    const tag = [s.full ? '満員' : '', s.hidden ? '非表示（管理者だけ）' : '', s.closed ? '締切済み（管理者だけ）' : ''].filter(Boolean).join('・');
+    return `<div class="grp${off ? ' off' : ''}">
+      <label><input type="checkbox" class="gchk" data-i="${i}" ${off ? 'disabled' : ''} onchange="toggleGroup(this)">${esc(s.label)}<span class="dl">締切 ${esc(s.deadline)}${tag ? '　' + esc(tag) : ''}</span></label>
       <div class="days hidden" id="days${i}"><div class="note">参加する日（${s.days.length}日間のうち）</div>
         <div class="opts">${s.days.map(d => `<label><input type="checkbox" name="dates" value="${esc(d.key)}" data-label="${esc(d.label)}" data-g="${i}">${esc(d.label)}</label>`).join('')}</div></div>
-    </div>`).join('') : '<div class="msg warn">いま申し込める日程はありません。</div>';
+    </div>`;
+  }).join('') : (locked.length ? '' : '<div class="msg warn">いま申し込める日程はありません。</div>'));
+  // 変更中：もとの日をチェック
+  if (mine.length) list.forEach((s, i) => {
+    const on = s.days.filter(d => mine.includes(d.key));
+    if (!on.length) return;
+    const g = document.querySelector(`.gchk[data-i="${i}"]`);
+    g.checked = true; $('days' + i).classList.remove('hidden');
+    $('days' + i).querySelectorAll('input').forEach(x => { x.checked = on.some(d => d.key === x.value); });
+  });
   const doc = base === '千葉' ? INIT.links.docChiba : base === '和歌山' ? INIT.links.docWakayama : '';
-  $('docLinkBox').innerHTML = doc ? `<a href="${esc(doc)}" target="_blank" rel="noopener"><b>インターンシップ契約書 in${esc(base)}</b></a>` : '先に「参加するインターン」を選ぶと、契約書のリンクが出ます。';
+  const link = doc ? `<a href="${esc(doc)}" target="_blank" rel="noopener"><b>インターンシップ契約書 in${esc(base)}</b></a>` : '';
+  $('docLinkBox').innerHTML = link || '先に「参加するインターン」を選ぶと、契約書のリンクが出ます。';
   $('docLinkBox').className = doc ? '' : 'note';
+  renderContract();
+}
+/** 契約書：ひな形がある地域は自動作成（聞く項目＋同意）、ない地域はPDFのアップロード */
+const CT = () => ((INIT.contract || {})[val('base')] || { auto: false, fields: [] });
+function renderContract() {
+  const c = CT(), old = {};
+  document.querySelectorAll('#ctFields input').forEach(e => { old[e.dataset.label] = e.value; });   // 地域を選び直しても入れた値は残す
+  const was = EDIT && EDIT.contract || {};
+  show('autoBox', c.auto); show('upBox', !c.auto);
+  $('terms').textContent = c.terms || '（契約内容を読み込めませんでした。運営に連絡してください）';
+  $('ctFields').innerHTML = c.fields.map((f, i) => {
+    const v = old[f.label] != null ? old[f.label] : (was[f.label] || '');
+    const t = f.type === 'date' ? 'date' : f.type === 'tel' ? 'tel' : f.type === 'email' ? 'email' : 'text';
+    const im = (f.type === 'tel' || f.type === 'zip' ? ' inputmode="numeric"' : '') + (f.type === 'tel' ? ' placeholder="ハイフンなし"' : f.type === 'zip' ? ' placeholder="例）1234567"' : '');
+    return `<div class="field"><label class="q${ADM() ? '' : ' req'}">${esc(f.label)}</label><input type="${t}"${im} data-label="${esc(f.label)}" id="ct${i}" value="${esc(t === 'date' ? String(v).replace(/^(\d{4})年(\d+)月(\d+)日$/, (m, y, mo, d) => `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`) : v)}"></div>`;
+  }).join('');
 }
 function toggleGroup(el) {
   const box = $('days' + el.dataset.i);
   box.classList.toggle('hidden', !el.checked);
-  box.querySelectorAll('input').forEach(x => { x.checked = el.checked && box.querySelectorAll('input').length === 1; });   // 1日だけの日程は自動でチェック
+  box.querySelectorAll('input').forEach(x => { x.checked = el.checked; });   // 日程にチェックしたら全部の日を選んだ状態に（行かない日だけ外す）
 }
 
 function gather() {
@@ -201,6 +289,7 @@ function gather() {
     emName: txt('emName'), emRel: txt('emRel'), emTel: txt('emTel').replace(/[^0-9]/g, ''), care: txt('care'),
     base: val('base'), kubun: val('base') === '千葉' ? val('kubun') : '', dates: vals('dates'),
     referredByHas: val('referredByHas'), referredBy: txt('referredBy'), referredHas: val('referredHas'), referred: txt('referred'),
+    contract: Object.fromEntries([...document.querySelectorAll('#ctFields input')].map(e => [e.dataset.label, e.value.trim()])), agree: $('agree').checked,
   };
 }
 function validate(p) {
@@ -223,30 +312,44 @@ function validate(p) {
   if (!p.base) return '参加するインターンを選んでください';
   if (p.base === '千葉' && !p.kubun) return '参加区分を選んでください';
   const groups = [...document.querySelectorAll('.gchk:checked')];
-  if (!groups.length) return '参加希望日程を1つ以上選んでください';
-  for (const g of groups) if (!document.querySelector(`#days${g.dataset.i} input:checked`)) return `${g.parentNode.textContent.trim()} の参加する日を選んでください`;
+  const locked = EDIT && EDIT.base === p.base ? (EDIT.locked || []).length : 0;
+  if (!groups.length && !locked) return '参加希望日程を1つ以上選んでください（全部やめるときは上の「申込をキャンセルする」）';
+  for (const g of groups) if (!document.querySelector(`#days${g.dataset.i} input:checked`)) return `${SHOWN[g.dataset.i].label} の参加する日を選んでください`;
   if (!p.referredByHas || (p.referredByHas === 'いる' && !p.referredBy)) return 'あなたを紹介した人について答えてください（いる場合は名前も）';
   if (!p.referredHas || (p.referredHas === 'いる' && !p.referred)) return 'あなたが紹介した人について答えてください（いる場合は名前も）';
-  if (!f) return 'インターンシップ契約書（PDF）を添付してください';
-  if (!/pdf/i.test(f.type) && !/\.pdf$/i.test(f.name)) return 'インターンシップ契約書はPDFで添付してください';
-  if (f.size > 10 * 1024 * 1024) return 'PDFが10MBを超えています';
+  if (CT().auto) {
+    if (!ADM()) for (const k of Object.keys(p.contract)) if (!p.contract[k]) return `契約書の「${k}」を入力してください`;
+    if (!p.agree && !ADM()) return 'インターンシップ契約書の内容を読み、「同意します」にチェックしてください';
+    return '';
+  }
+  if (!f && !ADM() && !(EDIT && EDIT.hasDoc)) return 'インターンシップ契約書（PDF）を添付してください';
+  if (f && !/pdf/i.test(f.type) && !/\.pdf$/i.test(f.name)) return 'インターンシップ契約書はPDFで添付してください';
+  if (f && f.size > 10 * 1024 * 1024) return 'PDFが10MBを超えています';
   return '';
 }
 const other = (v, o) => v === 'その他' ? 'その他：' + o : v;
+function dayLines() {
+  const lock = EDIT && EDIT.base === val('base') ? (EDIT.locked || []).map(l => `${l.label}：${l.days.join('・')}（締切後）`) : [];
+  return lock.concat([...document.querySelectorAll('.gchk:checked')].map(g =>
+    `${SHOWN[g.dataset.i].label}：` + [...document.querySelectorAll(`#days${g.dataset.i} input:checked`)].map(x => x.dataset.label).join('・'))).join('\n');
+}
 function toConfirm() {
   const p = gather(), e = validate(p);
   if (e) return msg('msgForm', 'ng', esc(e));
   msg('msgForm');
-  const days = [...document.querySelectorAll('.gchk:checked')].map(g => [...document.querySelectorAll(`#days${g.dataset.i} input:checked`)].map(x => x.dataset.label).join('・')).join('\n');
   const area = (INIT.areas.find(a => a.prefs.includes(p.pref)) || {}).area || '';
   const allergy = p.allergyHas === 'なし' ? 'なし' : p.allergy.concat(p.allergyOther ? ['その他：' + p.allergyOther] : []).join('、');
+  const f = $('pdf').files[0];
   const rows = [['氏名', p.sei + ' ' + p.mei], ['学校名', p.school], ['専攻', other(p.major, p.majorOther)], ['学年', p.grade],
     ['お住まいの都道府県', `${p.pref}（${area}）`], ['このプロジェクトを知ったきっかけ', other(p.trigger, p.triggerOther)], ['性別', p.gender],
     ['アレルギー・食事制限', allergy], ['緊急連絡者', `${p.emName}（${p.emRel}）　${p.emTel}`], ['持病・配慮事項', p.care || '—'],
     ['参加するインターン', (INIT.bases.find(b => b.base === p.base) || {}).label]];
   if (p.base === '千葉') rows.push(['参加区分', p.kubun]);
-  rows.push(['参加する日', days], ['あなたを紹介した人', p.referredByHas === 'いる' ? p.referredBy : 'いない'], ['あなたが紹介した人', p.referredHas === 'いる' ? p.referred : 'いない'],
-    ['インターンシップ契約書', $('pdf').files[0].name]);
+  rows.push(['参加する日', dayLines()], ['あなたを紹介した人', p.referredByHas === 'いる' ? p.referredBy : 'いない'], ['あなたが紹介した人', p.referredHas === 'いる' ? p.referred : 'いない']);
+  if (CT().auto) {
+    Object.keys(p.contract).forEach(k => rows.push([`契約書：${k}`, String(p.contract[k] || '—').replace(/^(\d{4})-0?(\d+)-0?(\d+)$/, '$1年$2月$3日')]));
+    rows.push(['インターンシップ契約書', p.agree ? '内容に同意する（送信すると自動で作成）' : '（同意なし：管理者入力。契約書は作りません）']);
+  } else rows.push(['インターンシップ契約書', f ? f.name : (EDIT && EDIT.hasDoc ? '提出済み（そのまま）' : '（なし：管理者入力）')]);
   $('confirmList').innerHTML = rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
   $('formView').classList.add('hidden'); $('confirmView').classList.remove('hidden'); window.scrollTo(0, 0);
 }
@@ -259,14 +362,64 @@ async function send() {
   if (e) { back(); return msg('msgForm', 'ng', esc(e)); }
   $('sendBtn').disabled = true; msg('msgConfirm', 'warn', '送信しています…（少し時間がかかります）');
   try {
-    p.file = await readFile($('pdf').files[0]);
-    const r = await call({ action: 'regSubmit', payload: p });
-    $('doneInfo').innerHTML = `受付番号：<b style="user-select:all">${esc(r.id)}</b><br>氏名：${esc(r.name)}<br>${esc(r.base)}<br>参加する日：${esc(r.days.join('・'))}`;
-    $('confirmView').classList.add('hidden'); $('doneView').classList.remove('hidden'); window.scrollTo(0, 0);
+    const f = $('pdf').files[0];
+    if (f && !CT().auto) p.file = await readFile(f);
+    if (EDIT) { p.editId = EDIT.id; p.authSei = EDIT.sei; p.authMei = EDIT.mei; }   // 本人確認は読み込んだときの姓名（変更で名前を直しても通る）
+    const r = await call({ action: 'entrySubmit', payload: p });
+    $('doneTitle').textContent = r.edited ? '変更しました。' : '送信が完了しました。ありがとうございました。';
+    $('doneInfo').innerHTML = `申込番号：<b style="user-select:all;font-size:16px">${esc(r.id)}</b>（変更・キャンセルに使います。控えてください）<br>氏名：${esc(r.name)}<br>${esc(r.base)}<br>${r.schedules.map(esc).join('<br>')}`;
+    $('confirmView').classList.add('hidden'); $('editBanner').classList.add('hidden'); $('editBox').classList.add('hidden'); $('doneView').classList.remove('hidden'); window.scrollTo(0, 0);
   } catch (err) {
-    msg('msgConfirm', 'ng', err.message === 'Failed to fetch' ? '通信できませんでした。電波のよい所でもう一度送信してください' : esc(err.message));
+    msg('msgConfirm', 'ng', netErr(err));
   }
   $('sendBtn').disabled = false;
+}
+
+/* ---------- 申込番号で変更・キャンセル ---------- */
+async function loadEdit() {
+  const id = txt('eId'), sei = txt('eSei'), mei = txt('eMei');
+  if (!id || ((!sei || !mei) && !ADM())) return msg('msgEdit', 'ng', '申込番号と、申し込んだときの姓・名を入れてください');
+  msg('msgEdit', 'warn', '読み込んでいます…');
+  try {
+    const d = await call({ action: 'entryLoad', payload: { id, sei, mei } });
+    EDIT = d;
+    $('sei').value = d.sei; $('mei').value = d.mei; $('school').value = d.school;
+    setRadio('major', d.major); if (d.majorOther) $('majorOther').value = d.majorOther;
+    setRadio('grade', d.grade); $('pref').value = d.pref;
+    setRadio('trigger', d.trigger); if (d.triggerOther) $('triggerOther').value = d.triggerOther;
+    setRadio('gender', d.gender); setRadio('allergyHas', d.allergyHas); show('allergyBox', d.allergyHas === 'あり');
+    document.querySelectorAll('input[name="allergy"]').forEach(e => { e.checked = d.allergy.includes(e.value) || (e.value === 'その他' && !!d.allergyOther); });
+    if (d.allergyOther) $('allergyOther').value = d.allergyOther;
+    $('emName').value = d.emName; $('emRel').value = d.emRel; $('emTel').value = d.emTel; $('care').value = d.care || '';
+    setRadio('base', d.base); setRadio('kubun', d.kubun); renderBase();
+    $('agree').checked = !!d.agreed;   // 前に同意済み。内容を変えて送ると、その日時で作り直す
+    if (d.agreed) $('agreeNote').textContent = `前回：${d.agreed}。契約書に載る内容を変えて送ると、新しい日時で作り直します。`;
+    setRadio('referredByHas', d.referredByHas); $('referredBy').value = d.referredBy; show('referredByBox', d.referredByHas === 'いる');
+    setRadio('referredHas', d.referredHas); $('referred').value = d.referred; show('referredBox', d.referredHas === 'いる');
+    pdfLabel();
+    $('editIdTxt').textContent = d.id;
+    show('lockNote', d.locked.length > 0);
+    $('lockNote').textContent = d.locked.length ? '締切を過ぎた日程（' + d.locked.map(l => l.label).join('、') + '）は変えられません。変える・やめるときは運営に連絡してください。' : '';
+    if (d.status === 'キャンセル') {   // 管理者だけ読み込める
+      $('lockNote').textContent = 'この申込はキャンセル済みです（送信すると受付に戻ります）。';
+      show('lockNote', true); show('cancelBtn', false);
+    }
+    $('editBox').open = false; show('editBox', false); show('editBanner', true); msg('msgEdit');
+    window.scrollTo(0, 0);
+  } catch (e) { msg('msgEdit', 'ng', netErr(e)); }
+}
+async function cancelApp(btn) {
+  if (!EDIT) return;
+  const part = (EDIT.locked || []).length > 0;
+  if (!confirm(part ? '締切前の日程の申込をキャンセルします（締切後の日程は残ります）。よろしいですか？' : 'この申込をキャンセルします。よろしいですか？')) return;
+  btn.disabled = true; msg('msgCancel', 'warn', 'キャンセルしています…');
+  try {
+    const r = await call({ action: 'entryCancel', payload: { id: EDIT.id, sei: EDIT.sei, mei: EDIT.mei } });
+    $('doneTitle').textContent = r.partial ? '締切前の日程の申込をキャンセルしました。' : '申込をキャンセルしました。';
+    $('doneInfo').innerHTML = `申込番号：<b>${esc(r.id)}</b>` + (r.partial ? '<br>締切後の日程は残っています。やめるときは運営に連絡してください。' : '<br>また参加するときは、新しく申し込んでください。');
+    ['formView', 'confirmView', 'editBanner', 'editBox'].forEach(id => $(id).classList.add('hidden'));
+    $('doneView').classList.remove('hidden'); window.scrollTo(0, 0);
+  } catch (e) { msg('msgCancel', 'ng', netErr(e)); btn.disabled = false; }
 }
 init();
 </script>
