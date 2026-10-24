@@ -390,7 +390,7 @@ async function loadEdit() {
     setRadio('gender', d.gender); setRadio('allergyHas', d.allergyHas); show('allergyBox', d.allergyHas === 'あり');
     document.querySelectorAll('input[name="allergy"]').forEach(e => { e.checked = d.allergy.includes(e.value) || (e.value === 'その他' && !!d.allergyOther); });
     if (d.allergyOther) $('allergyOther').value = d.allergyOther;
-    $('emName').value = d.emName; $('emRel').value = d.emRel; $('emTel').value = d.emTel; $('care').value = d.care || '';
+    $('emName').value = d.emName; $('emRel').value = d.emRel; $('emTel').value = /^[1-9]\d{8,9}$/.test(String(d.emTel)) ? '0' + d.emTel : d.emTel;   // 先頭の0が消えていた古い行の分 $('care').value = d.care || '';
     setRadio('base', d.base); setRadio('kubun', d.kubun); renderBase();
     $('agree').checked = !!d.agreed;   // 前に同意済み。内容を変えて送ると、その日時で作り直す
     if (d.agreed) $('agreeNote').textContent = `前回：${d.agreed}。契約書に載る内容を変えて送ると、新しい日時で作り直します。`;
