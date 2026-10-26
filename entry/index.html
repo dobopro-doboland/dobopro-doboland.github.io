@@ -58,7 +58,7 @@
 <header><img src="../app/icon-192.png" alt=""><div><div class="t1" id="pageTitle">DOBOLAND 参加申込</div><div class="t2">短期インターンの参加申し込み・変更（パイナップル）</div></div></header>
 <div class="note" style="margin:-2px 0 8px"><a href="../intern/">← TOPに戻る</a></div>
 <div class="rule" id="introBox">こちらは<b>必ず説明会参加後</b>にご回答ください。<br>はじめて参加する人は、最後にインターンシップ契約書の内容を読んで同意していただきます（入力した内容から契約書を自動で作成します）。2回目以降の人は、前に出した契約書を使うので不要です。<br>あとで日程を変える・キャンセルするときは、TOPの「②申し込みの変更・キャンセル」から、<b>名前と生年月日</b>で自分の申込を開けます。</div>
-<div id="admBox" class="adm hidden">🔑 <b>管理者として代理で入力しています</b>。契約書は任意、非表示・締切後の日程も選べます。</div>
+<div id="admBox" class="adm hidden">🔑 <b>管理者として代理で入力しています</b>。契約書は任意、非表示・終わった日程も選べます。</div>
 <div id="msgTop" class="msg warn">読み込み中…</div>
 
 <!-- ② 名前＋生年月日で、自分の申込を探す -->
@@ -133,7 +133,7 @@
   <div id="baseBox" class="hidden">
     <div class="field hidden" id="kubunBox"><label class="q req">参加区分</label><div class="opts" id="o_kubun"></div></div>
     <div class="field"><label class="q req">参加希望日程</label>
-      <div class="note" style="margin-bottom:6px">参加したい日程にチェックし、その中で参加する日を選んでください。締切を過ぎた日程の変更・キャンセルは、運営に連絡してください。</div>
+      <div class="note" style="margin-bottom:6px">参加したい日程にチェックし、その中で参加する日を選んでください。終わった日程の変更・キャンセルは、運営に連絡してください。</div>
       <div id="groups"></div></div>
   </div>
 
@@ -297,7 +297,7 @@ function pdfLabel() {
   $('pdfNote').textContent = EDIT && EDIT.hasDoc ? 'PDF・10MBまで（提出済みです。出し直すときだけ選んでください）' : 'PDF・10MBまで';
 }
 
-/** 千葉／和歌山を選んだら、参加区分（千葉だけ）・日程・契約書のリンクを出す。変更中は締切後の日程を固定で出す */
+/** 千葉／和歌山を選んだら、参加区分（千葉だけ）・日程・契約書のリンクを出す。変更中は終わった日程を固定で出す */
 function renderBase() {
   const base = val('base');
   show('baseBox', !!base); show('kubunBox', base === '千葉');
@@ -305,11 +305,11 @@ function renderBase() {
   const lockedNames = locked.map(l => l.name);
   const mine = EDIT && EDIT.base === base ? EDIT.dates || [] : [];
   const list = SHOWN = INIT.schedules.filter(s => s.base === base && !lockedNames.includes(s.name));
-  const lockHtml = locked.map(l => `<div class="grp lock"><label><input type="checkbox" checked disabled>${esc(l.label)}<span class="dl">締切後のため変更できません（${esc(l.days.join('・'))}）</span></label></div>`).join('');
+  const lockHtml = locked.map(l => `<div class="grp lock"><label><input type="checkbox" checked disabled>${esc(l.label)}<span class="dl">終わった日程のため変更できません（${esc(l.days.join('・'))}）</span></label></div>`).join('');
   $('groups').innerHTML = lockHtml + (list.length ? list.map((s, i) => {
-    const tag = [s.hidden ? '非表示（管理者だけ）' : '', s.closed ? '締切済み（管理者だけ）' : ''].filter(Boolean).join('・');
+    const tag = [s.hidden ? '非表示（管理者だけ）' : '', s.closed ? '終了（管理者だけ）' : ''].filter(Boolean).join('・');
     return `<div class="grp">
-      <label><input type="checkbox" class="gchk" data-i="${i}" onchange="toggleGroup(this)">${esc(s.label)}<span class="dl">締切 ${esc(s.deadline)}${tag ? '　' + esc(tag) : ''}</span></label>
+      <label><input type="checkbox" class="gchk" data-i="${i}" onchange="toggleGroup(this)">${esc(s.label)}<span class="dl">${tag ? esc(tag) : ''}</span></label>
       <div class="days hidden" id="days${i}"><div class="note">参加する日（${s.days.length}日間のうち）</div>
         <div class="opts">${s.days.map(d => `<label><input type="checkbox" name="dates" value="${esc(d.key)}" data-label="${esc(d.label)}" data-g="${i}">${esc(d.label)}</label>`).join('')}</div></div>
     </div>`;
@@ -403,7 +403,7 @@ function validate(p) {
 }
 const other = (v, o) => v === 'その他' ? 'その他：' + o : v;
 function dayLines() {
-  const lock = EDIT && EDIT.base === val('base') ? (EDIT.locked || []).map(l => `${l.label}：${l.days.join('・')}（締切後）`) : [];
+  const lock = EDIT && EDIT.base === val('base') ? (EDIT.locked || []).map(l => `${l.label}：${l.days.join('・')}（終了）`) : [];
   return lock.concat([...document.querySelectorAll('.gchk:checked')].map(g =>
     `${SHOWN[g.dataset.i].label}：` + [...document.querySelectorAll(`#days${g.dataset.i} input:checked`)].map(x => x.dataset.label).join('・'))).join('\n');
 }
@@ -469,7 +469,7 @@ async function loadEdit() {
     pdfLabel();
     $('editIdTxt').textContent = d.id;
     show('lockNote', d.locked.length > 0);
-    $('lockNote').textContent = d.locked.length ? '締切を過ぎた日程（' + d.locked.map(l => l.label).join('、') + '）は変えられません。変える・やめるときは運営に連絡してください。' : '';
+    $('lockNote').textContent = d.locked.length ? '終わった日程（' + d.locked.map(l => l.label).join('、') + '）は変えられません。変える・やめるときは運営に連絡してください。' : '';
     if (d.status === 'キャンセル') {   // 管理者だけ読み込める
       $('lockNote').textContent = 'この申込はキャンセル済みです（送信すると受付に戻ります）。';
       show('lockNote', true); show('cancelBtn', false);
@@ -534,12 +534,12 @@ function openFound(id) {
 async function cancelApp(btn) {
   if (!EDIT) return;
   const part = (EDIT.locked || []).length > 0;
-  if (!confirm(part ? '締切前の日程の申込をキャンセルします（締切後の日程は残ります）。よろしいですか？' : 'この申込をキャンセルします。よろしいですか？')) return;
+  if (!confirm(part ? 'まだ終わっていない日程の申込をキャンセルします（終わった日程は残ります）。よろしいですか？' : 'この申込をキャンセルします。よろしいですか？')) return;
   btn.disabled = true; msg('msgCancel', 'warn', 'キャンセルしています…');
   try {
     const r = await call({ action: 'entryCancel', payload: { id: EDIT.id, sei: EDIT.sei, mei: EDIT.mei } });
-    $('doneTitle').textContent = r.partial ? '締切前の日程の申込をキャンセルしました。' : '申込をキャンセルしました。';
-    $('doneInfo').innerHTML = `申込番号：<b>${esc(r.id)}</b>` + (r.partial ? '<br>締切後の日程は残っています。やめるときは運営に連絡してください。' : '<br>また参加するときは、新しく申し込んでください。');
+    $('doneTitle').textContent = r.partial ? 'まだ終わっていない日程の申込をキャンセルしました。' : '申込をキャンセルしました。';
+    $('doneInfo').innerHTML = `申込番号：<b>${esc(r.id)}</b>` + (r.partial ? '<br>終わった日程は残っています。やめるときは運営に連絡してください。' : '<br>また参加するときは、新しく申し込んでください。');
     ['formView', 'confirmView', 'editBanner', 'editBox'].forEach(id => $(id).classList.add('hidden'));
     $('doneView').classList.remove('hidden'); window.scrollTo(0, 0);
   } catch (e) { msg('msgCancel', 'ng', netErr(e)); btn.disabled = false; }
