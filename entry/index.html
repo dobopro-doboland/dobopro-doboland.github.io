@@ -58,7 +58,7 @@
 <header><img src="../app/icon-192.png" alt=""><div><div class="t1" id="pageTitle">DOBOLAND 参加申込</div><div class="t2">短期インターンの参加申し込み・変更（パイナップル）</div></div></header>
 <div class="note" style="margin:-2px 0 8px"><a href="../intern/">← TOPに戻る</a></div>
 <div class="rule" id="introBox">こちらは<b>必ず説明会参加後</b>にご回答ください。<br>はじめて参加する人は、最後にインターンシップ契約書の内容を読んで同意していただきます（入力した内容から契約書を自動で作成します）。2回目以降の人は、前に出した契約書を使うので不要です。<br>あとで日程を変える・キャンセルするときは、TOPの「②申し込みの変更・キャンセル」から、<b>名前と生年月日</b>で自分の申込を開けます。</div>
-<div id="admBox" class="adm hidden">🔑 <b>管理者として代理で入力しています</b>。契約書は任意、非表示・締切後・満員の日程も選べます。</div>
+<div id="admBox" class="adm hidden">🔑 <b>管理者として代理で入力しています</b>。契約書は任意、非表示・締切後の日程も選べます。</div>
 <div id="msgTop" class="msg warn">読み込み中…</div>
 
 <!-- ② 名前＋生年月日で、自分の申込を探す -->
@@ -155,10 +155,12 @@
   <div class="note" style="margin:6px 0 10px">交通費の割引の判定に使います。申し込んだあとに分かった場合は、運営に伝えてください。</div>
   <div class="field"><label class="q req">あなたをDOBOLANDに紹介した人はいますか</label>
     <div class="opts inline" id="o_referredByHas"></div>
-    <div id="referredByBox" class="sub hidden"><input type="text" id="referredBy" placeholder="紹介した人の名前"></div></div>
+    <div id="referredByBox" class="sub hidden"><div class="note" style="margin-bottom:4px">1つの欄に1人ずつ、名前を書いてください。</div>
+      <div id="referredByList"></div><button class="btn sub2" type="button" style="margin-top:4px" onclick="addRef('referredBy')">＋もう1人</button></div></div>
   <div class="field"><label class="q req">あなたが紹介した人はいますか</label>
     <div class="opts inline" id="o_referredHas"></div>
-    <div id="referredBox" class="sub hidden"><input type="text" id="referred" placeholder="紹介した人の名前（複数いるときは「、」で区切る）"></div></div>
+    <div id="referredBox" class="sub hidden"><div class="note" style="margin-bottom:4px">1つの欄に1人ずつ、名前を書いてください。2人以上いるときは「＋もう1人」で欄を足せます。</div>
+      <div id="referredList"></div><button class="btn sub2" type="button" style="margin-top:4px" onclick="addRef('referred')">＋もう1人</button></div></div>
 
   <h2>インターンシップ契約書</h2>
   <div id="repeatNote" class="msg ok hidden">2回目以降なので、契約書の提出はいりません（前に出した契約書を使います。前の申込が見つからないときは、運営が確認します）。</div>
@@ -207,7 +209,7 @@
   <a class="btn sub2" href="../intern/" style="display:block;text-align:center;text-decoration:none">TOPに戻る</a>
 </div>
 
-<div style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.27</span><span id="verWarn"></span></div>
+<div style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.28</span><span id="verWarn"></span></div>
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbwgDYCaeTYSSm5ozOPx-EK_5JuKouHXV1BlTihzQcA9dxEnI6AVZTv3668xHtgGQ9skCg/exec';
@@ -242,6 +244,21 @@ function opts(id, list, multi, other, onchange) {
 const val = id => { const e = document.querySelector(`input[name="${id}"]:checked`); return e ? e.value : ''; };
 const vals = id => [...document.querySelectorAll(`input[name="${id}"]:checked`)].map(e => e.value);
 const txt = id => ($(id) ? $(id).value.trim() : '');
+/* 紹介の名前：1つの欄に1人。送るときは「、」でつなぐ（前の申込で「、」や改行で書いた名前も欄に分ける） */
+function addRef(id, v) {
+  const box = $(id + 'List'), n = box.children.length + 1;
+  const inp = document.createElement('input');
+  inp.type = 'text'; inp.className = 'ref'; inp.placeholder = n + '人目の名前'; inp.value = v || '';
+  inp.style.marginTop = n > 1 ? '4px' : '0';
+  box.appendChild(inp);
+  if (!v && n > 1) inp.focus();
+}
+const refs = id => [...$(id + 'List').querySelectorAll('input.ref')].map(x => x.value.trim()).filter(Boolean).join('、');
+function setRefs(id, v) {
+  $(id + 'List').innerHTML = '';
+  const list = String(v || '').split(/[、,，\n]+/).map(x => x.trim()).filter(Boolean);
+  (list.length ? list : ['']).forEach(x => addRef(id, x));
+}
 const show = (id, on) => $(id).classList.toggle('hidden', !on);
 const setRadio = (id, v) => { document.querySelectorAll(`input[name="${id}"]`).forEach(e => { e.checked = e.value === v; }); };
 
@@ -258,6 +275,7 @@ async function init() {
     opts('kubun', o.kubun);
     opts('referredByHas', ['いない', 'いる'], false, false, () => show('referredByBox', val('referredByHas') === 'いる'));
     opts('referredHas', ['いない', 'いる'], false, false, () => show('referredBox', val('referredHas') === 'いる'));
+    setRefs('referredBy', ''); setRefs('referred', '');
     opts('repeat', ['はじめて', '2回目以降'], false, false, () => { renderContract(); checkPrior(); });
     document.querySelectorAll('.careerLink').forEach(a => { a.href = INIT.links.career; });
     show('admBox', ADM()); pdfLabel();
@@ -289,10 +307,9 @@ function renderBase() {
   const list = SHOWN = INIT.schedules.filter(s => s.base === base && !lockedNames.includes(s.name));
   const lockHtml = locked.map(l => `<div class="grp lock"><label><input type="checkbox" checked disabled>${esc(l.label)}<span class="dl">締切後のため変更できません（${esc(l.days.join('・'))}）</span></label></div>`).join('');
   $('groups').innerHTML = lockHtml + (list.length ? list.map((s, i) => {
-    const off = s.full && !ADM() && !s.days.some(d => mine.includes(d.key));
-    const tag = [s.full ? '満員' : '', s.hidden ? '非表示（管理者だけ）' : '', s.closed ? '締切済み（管理者だけ）' : ''].filter(Boolean).join('・');
-    return `<div class="grp${off ? ' off' : ''}">
-      <label><input type="checkbox" class="gchk" data-i="${i}" ${off ? 'disabled' : ''} onchange="toggleGroup(this)">${esc(s.label)}<span class="dl">締切 ${esc(s.deadline)}${tag ? '　' + esc(tag) : ''}</span></label>
+    const tag = [s.hidden ? '非表示（管理者だけ）' : '', s.closed ? '締切済み（管理者だけ）' : ''].filter(Boolean).join('・');
+    return `<div class="grp">
+      <label><input type="checkbox" class="gchk" data-i="${i}" onchange="toggleGroup(this)">${esc(s.label)}<span class="dl">締切 ${esc(s.deadline)}${tag ? '　' + esc(tag) : ''}</span></label>
       <div class="days hidden" id="days${i}"><div class="note">参加する日（${s.days.length}日間のうち）</div>
         <div class="opts">${s.days.map(d => `<label><input type="checkbox" name="dates" value="${esc(d.key)}" data-label="${esc(d.label)}" data-g="${i}">${esc(d.label)}</label>`).join('')}</div></div>
     </div>`;
@@ -341,7 +358,7 @@ function gather() {
     allergyHas: val('allergyHas'), allergy: vals('allergy').filter(x => x !== 'その他'), allergyOther: vals('allergy').includes('その他') ? txt('allergyOther') : '',
     emName: txt('emName'), emRel: txt('emRel'), emTel: txt('emTel').replace(/[^0-9]/g, ''), care: txt('care'),
     base: val('base'), kubun: val('base') === '千葉' ? val('kubun') : '', dates: vals('dates'),
-    referredByHas: val('referredByHas'), referredBy: txt('referredBy'), referredHas: val('referredHas'), referred: txt('referred'),
+    referredByHas: val('referredByHas'), referredBy: refs('referredBy'), referredHas: val('referredHas'), referred: refs('referred'),
     contract: Object.fromEntries([...document.querySelectorAll('#ctFields input')].map(e => [e.dataset.label, e.value.trim()])), agree: $('agree').checked,
     birth: $('birth').value, repeat: val('repeat'),
   };
@@ -447,8 +464,8 @@ async function loadEdit() {
     setRadio('base', d.base); setRadio('kubun', d.kubun); renderBase();
     $('agree').checked = !!d.agreed;   // 前に同意済み。内容を変えて送ると、その日時で作り直す
     if (d.agreed) $('agreeNote').textContent = `前回：${d.agreed}。契約書に載る内容を変えて送ると、新しい日時で作り直します。`;
-    setRadio('referredByHas', d.referredByHas); $('referredBy').value = d.referredBy; show('referredByBox', d.referredByHas === 'いる');
-    setRadio('referredHas', d.referredHas); $('referred').value = d.referred; show('referredBox', d.referredHas === 'いる');
+    setRadio('referredByHas', d.referredByHas); setRefs('referredBy', d.referredBy); show('referredByBox', d.referredByHas === 'いる');
+    setRadio('referredHas', d.referredHas); setRefs('referred', d.referred); show('referredBox', d.referredHas === 'いる');
     pdfLabel();
     $('editIdTxt').textContent = d.id;
     show('lockNote', d.locked.length > 0);
