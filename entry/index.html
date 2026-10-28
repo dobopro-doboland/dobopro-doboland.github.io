@@ -99,17 +99,17 @@
     <div class="field"><label class="q req">姓</label><input type="text" id="sei" autocomplete="family-name" placeholder="例）山田" onchange="checkPrior()"></div>
     <div class="field"><label class="q req">名</label><input type="text" id="mei" autocomplete="given-name" placeholder="例）花子" onchange="checkPrior()"></div>
   </div>
-  <div class="field"><label class="q req" id="birthLbl">生年月日</label><input type="date" id="birth" min="1950-01-01" max="2015-12-31" onchange="checkPrior()">
+  <div class="field"><label class="q req">学校名（大学・高校など）</label><input type="text" id="school" placeholder="例）〇〇大学" onchange="checkPrior()"></div>
+  <div class="field" id="birthBox"><label class="q req" id="birthLbl">生年月日</label><input type="date" id="birth" min="1950-01-01" max="2015-12-31">
     <div class="note">申込の変更・キャンセルのときに、名前と生年月日で自分の申込を探すのに使います。</div></div>
   <div class="field"><label class="q req" id="repeatLbl">DOBOLANDの短期インターンに参加するのは</label><div class="opts inline" id="o_repeat"></div>
-    <div class="note">2回目以降の人は、前回の申込の内容（学校・学年・住所・アレルギー・緊急連絡先など）と、前に出したインターンシップ契約書を使うので、書かなくてよくなります。</div></div>
+    <div class="note">2回目以降の人は名前と学校名で前回の申込を探せます。前回の内容は画面に表示せず、運営側で引き継ぎます。変更がある場合は運営へ連絡してください。</div></div>
   <div id="priorNote"></div>
 
   <div id="profileBox">
   <h2>あなたについて</h2>
-  <div class="field"><label class="q req">学校名</label><input type="text" id="school" placeholder="例）〇〇大学"></div>
   <div class="field"><label class="q req">専攻</label><div class="opts" id="o_major"></div></div>
-  <div class="field"><label class="q req">学年</label><div class="opts" id="o_grade"></div></div>
+  <div class="field"><label class="q req">学年・卒業年</label><div class="opts" id="o_grade"></div></div>
   <div class="field"><label class="q req">お住まいの都道府県</label><select id="pref"><option value="">選んでください</option></select></div>
   <div class="field"><label class="q req">このプロジェクトを知ったきっかけ</label><div class="opts" id="o_trigger"></div></div>
   <div class="field"><label class="q req">性別</label><div class="opts inline" id="o_gender"></div></div>
@@ -121,11 +121,12 @@
     </div>
   </div>
 
-  <h2>緊急連絡先</h2>
+  <div id="emergencyBox"><h2>緊急連絡先</h2>
   <div class="field"><label class="q req">緊急連絡者氏名（緊急時連絡がつきやすい保護者等）</label><input type="text" id="emName"></div>
-  <div class="field"><label class="q req">続柄</label><input type="text" id="emRel" placeholder="例）母"></div>
+  <div class="field"><label class="q req" for="emRel">続柄</label><select id="emRel"><option value="">選んでください</option></select></div>
   <div class="field"><label class="q req">緊急連絡先（電話番号・ハイフンなし）</label><input type="tel" id="emTel" inputmode="numeric" placeholder="例）09012345678" oninput="this.value=this.value.replace(/[^0-9０-９]/g,'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248))"></div>
   <div class="field"><label class="q">持病・配慮事項</label><div class="note" style="margin-bottom:6px">活動中に配慮してほしいことがあればご記入ください。</div><textarea id="care"></textarea></div>
+  </div>
   </div>
 
   <h2>参加するインターン</h2>
@@ -266,9 +267,10 @@ async function init() {
   try {
     INIT = await call({ action: 'entryInit' });
     const o = INIT.opt;
-    opts('major', o.major, false, true); opts('grade', o.grade);
+    opts('major', [...new Set(o.major.concat(['高校生', 'その他']))]); opts('grade', o.grade);
     $('pref').innerHTML = '<option value="">選んでください</option>' + INIT.areas.map(a => `<optgroup label="${esc(a.area)}">${a.prefs.map(p => `<option>${esc(p)}</option>`).join('')}</optgroup>`).join('');
     opts('trigger', o.trigger, false, true); opts('gender', o.gender);
+    $('emRel').innerHTML = '<option value="">選んでください</option>' + (o.emRel || ['母親', '父親', '祖父母', '兄弟姉妹', '配偶者', 'その他']).map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
     opts('allergyHas', ['なし', 'あり'], false, false, () => show('allergyBox', val('allergyHas') === 'あり'));
     opts('allergy', o.allergy, true, true);
     opts('base', INIT.bases.map(b => ({ value: b.base, label: b.label })), false, false, renderBase);
@@ -334,8 +336,9 @@ function renderContract() {
   const c = CT(), old = {};
   document.querySelectorAll('#ctFields input').forEach(e => { old[e.dataset.label] = e.value; });   // 地域を選び直しても入れた値は残す
   const was = EDIT && EDIT.contract || {};
-  const rep = val('repeat') === '2回目以降';
+  const rep = val('repeat') === '2回目以降' || !!(EDIT && EDIT.privateStored);
   show('repeatNote', rep); show('autoBox', c.auto && !rep); show('upBox', !c.auto && !rep);
+  if (rep) { $('ctFields').innerHTML = ''; $('terms').textContent = ''; return; }
   $('terms').textContent = c.terms || '（契約内容を読み込めませんでした。運営に連絡してください）';
   $('ctFields').innerHTML = c.fields.map((f, i) => {
     const v = old[f.label] != null ? old[f.label] : (was[f.label] || '');
@@ -360,15 +363,17 @@ function gather() {
     base: val('base'), kubun: val('base') === '千葉' ? val('kubun') : '', dates: vals('dates'),
     referredByHas: val('referredByHas'), referredBy: refs('referredBy'), referredHas: val('referredHas'), referred: refs('referred'),
     contract: Object.fromEntries([...document.querySelectorAll('#ctFields input')].map(e => [e.dataset.label, e.value.trim()])), agree: $('agree').checked,
-    birth: $('birth').value, repeat: val('repeat'),
+    birth: $('birth').value, repeat: val('repeat'), reusePrior: reuseReady(),
   };
 }
 function validate(p) {
   const f = $('pdf').files[0];
   if (!p.sei || !p.mei) return '姓と名を入力してください';
-  if (!p.birth && !ADM()) return '生年月日を入力してください';
+  if (val('repeat') === '2回目以降' && PRIOR_PENDING) return '前回の申込を確認しています。少し待ってください';
+  if (!p.birth && !ADM() && !p.reusePrior) return '生年月日を入力してください';
   if (!p.school) return '学校名を入力してください';
-  if (!p.major || (p.major === 'その他' && !p.majorOther)) return '専攻を選んでください（「その他」は内容も入力）';
+  if (!p.reusePrior) {
+  if (!p.major) return '専攻を選んでください';
   if (!p.grade) return '学年を選んでください';
   if (!p.pref) return 'お住まいの都道府県を選んでください';
   if (!p.trigger || (p.trigger === 'その他' && !p.triggerOther)) return 'このプロジェクトを知ったきっかけを選んでください（「その他」は内容も入力）';
@@ -378,9 +383,12 @@ function validate(p) {
     if (vals('allergy').includes('その他') && !p.allergyOther) return 'アレルギー・食事制限の「その他」の内容を入力してください';
     if (!p.allergy.length && !p.allergyOther) return 'アレルギー・食事制限の内容を選ぶか、「その他」に書いてください';
   }
-  if (!p.emName) return '緊急連絡者氏名を入力してください';
-  if (!p.emRel) return '続柄を入力してください';
-  if (!/^0\d{9,10}$/.test(p.emTel)) return '緊急連絡先は電話番号（ハイフンなしの数字10〜11けた）で入力してください';
+  if (!(EDIT && EDIT.privateStored)) {
+    if (!p.emName) return '緊急連絡者氏名を入力してください';
+    if (!p.emRel) return '続柄を選んでください';
+    if (!/^0\d{9,10}$/.test(p.emTel)) return '緊急連絡先は電話番号（ハイフンなしの数字10〜11けた）で入力してください';
+  }
+  }
   if (!p.base) return '参加するインターンを選んでください';
   if (p.base === '千葉' && !p.kubun) return '参加区分を選んでください';
   const groups = [...document.querySelectorAll('.gchk:checked')];
@@ -390,7 +398,7 @@ function validate(p) {
   if (!p.referredByHas || (p.referredByHas === 'いる' && !p.referredBy)) return 'あなたを紹介した人について答えてください（いる場合は名前も）';
   if (!p.referredHas || (p.referredHas === 'いる' && !p.referred)) return 'あなたが紹介した人について答えてください（いる場合は名前も）';
   if (!p.repeat && !ADM()) return 'DOBOLANDの短期インターンに参加するのは「はじめて」か「2回目以降」かを選んでください';
-  if (p.repeat === '2回目以降') return '';   // 契約書は前に出したものを使う
+  if (p.repeat === '2回目以降' || (EDIT && EDIT.privateStored)) return '';
   if (CT().auto) {
     if (!ADM()) for (const k of Object.keys(p.contract)) if (!p.contract[k]) return `契約書の「${k}」を入力してください`;
     if (!p.agree && !ADM()) return 'インターンシップ契約書の内容を読み、「同意します」にチェックしてください';
@@ -401,7 +409,7 @@ function validate(p) {
   if (f && f.size > 10 * 1024 * 1024) return 'PDFが10MBを超えています';
   return '';
 }
-const other = (v, o) => v === 'その他' ? 'その他：' + o : v;
+const other = (v, o) => v === 'その他' && o ? 'その他：' + o : v;
 function dayLines() {
   const lock = EDIT && EDIT.base === val('base') ? (EDIT.locked || []).map(l => `${l.label}：${l.days.join('・')}（終了）`) : [];
   return lock.concat([...document.querySelectorAll('.gchk:checked')].map(g =>
@@ -414,13 +422,15 @@ function toConfirm() {
   const area = (INIT.areas.find(a => a.prefs.includes(p.pref)) || {}).area || '';
   const allergy = p.allergyHas === 'なし' ? 'なし' : p.allergy.concat(p.allergyOther ? ['その他：' + p.allergyOther] : []).join('、');
   const f = $('pdf').files[0];
-  const rows = [['氏名', p.sei + ' ' + p.mei], ['生年月日', p.birth ? p.birth.replace(/^(\d{4})-0?(\d+)-0?(\d+)$/, '$1年$2月$3日') : '—'], ['学校名', p.school], ['専攻', other(p.major, p.majorOther)], ['学年', p.grade],
+  let rows = [['氏名', p.sei + ' ' + p.mei], ['生年月日', p.birth ? p.birth.replace(/^(\d{4})-0?(\d+)-0?(\d+)$/, '$1年$2月$3日') : '—'], ['学校名', p.school], ['専攻', p.major], ['学年・卒業年', p.grade],
     ['お住まいの都道府県', `${p.pref}（${area}）`], ['このプロジェクトを知ったきっかけ', other(p.trigger, p.triggerOther)], ['性別', p.gender],
     ['アレルギー・食事制限', allergy], ['緊急連絡者', `${p.emName}（${p.emRel}）　${p.emTel}`], ['持病・配慮事項', p.care || '—'],
     ['参加するインターン', (INIT.bases.find(b => b.base === p.base) || {}).label]];
+  if (p.reusePrior) rows = rows.filter(([k]) => ['氏名', '学校名', '参加するインターン'].includes(k)).concat([['前回の申込内容', '運営側で引き継ぎます（個人情報は表示しません）']]);
+  if (EDIT && EDIT.privateStored) rows = rows.filter(([k]) => k !== '緊急連絡者');
   if (p.base === '千葉') rows.push(['参加区分', p.kubun]);
   rows.push(['参加する日', dayLines()], ['あなたを紹介した人', p.referredByHas === 'いる' ? p.referredBy : 'いない'], ['あなたが紹介した人', p.referredHas === 'いる' ? p.referred : 'いない']);
-  if (p.repeat === '2回目以降') rows.push(['インターンシップ契約書', '2回目以降（前に出した契約書を使う）']);
+  if (p.repeat === '2回目以降' || (EDIT && EDIT.privateStored)) rows.push(['インターンシップ契約書', '提出済みの内容は表示しません。変更は運営へ連絡してください']);
   else if (CT().auto) {
     Object.keys(p.contract).forEach(k => rows.push([`契約書：${k}`, String(p.contract[k] || '—').replace(/^(\d{4})-0?(\d+)-0?(\d+)$/, '$1年$2月$3日')]));
     rows.push(['インターンシップ契約書', p.agree ? '内容に同意する（送信すると自動で作成）' : '（同意なし：管理者入力。契約書は作りません）']);
@@ -459,7 +469,7 @@ async function loadEdit() {
     const d = await call({ action: 'entryLoad', payload: { id, sei, mei } });
     EDIT = d;
     $('sei').value = d.sei; $('mei').value = d.mei;
-    fillProfile(d); show('profileBox', true); msg('priorNote');
+    fillProfile(d); show('profileBox', true); show('emergencyBox', !d.privateStored); msg('priorNote');
     $('birth').value = d.birth || $('fBirth').value || ''; setRadio('repeat', d.repeat); renderContract();
     setRadio('base', d.base); setRadio('kubun', d.kubun); renderBase();
     $('agree').checked = !!d.agreed;   // 前に同意済み。内容を変えて送ると、その日時で作り直す
@@ -482,37 +492,43 @@ async function loadEdit() {
 /** 「あなたについて・緊急連絡先」に入れる（変更で読み込んだとき・2回目以降の前回の内容） */
 function fillProfile(d) {
   $('school').value = d.school || '';
-  setRadio('major', d.major); if (d.majorOther) $('majorOther').value = d.majorOther;
+  setRadio('major', d.major); if (d.majorOther && $('majorOther')) $('majorOther').value = d.majorOther;
   setRadio('grade', d.grade); $('pref').value = d.pref || '';
   setRadio('trigger', d.trigger); if (d.triggerOther) $('triggerOther').value = d.triggerOther;
   setRadio('gender', d.gender); setRadio('allergyHas', d.allergyHas); show('allergyBox', d.allergyHas === 'あり');
   document.querySelectorAll('input[name="allergy"]').forEach(e => { e.checked = (d.allergy || []).includes(e.value) || (e.value === 'その他' && !!d.allergyOther); });
   if (d.allergyOther) $('allergyOther').value = d.allergyOther;
-  $('emName').value = d.emName || ''; $('emRel').value = d.emRel || ''; $('care').value = d.care || '';
+  $('emName').value = d.emName || '';
+  const relation = ({母:'母親', 父:'父親', 祖父:'祖父母', 祖母:'祖父母', 兄:'兄弟姉妹', 弟:'兄弟姉妹', 姉:'兄弟姉妹', 妹:'兄弟姉妹'})[d.emRel] || d.emRel || '';
+  $('emRel').value = [...$('emRel').options].some(o => o.value === relation) ? relation : 'その他';
+  $('care').value = d.care || '';
   $('emTel').value = /^[1-9]\d{8,9}$/.test(String(d.emTel)) ? '0' + d.emTel : (d.emTel || '');   // 先頭の0が消えていた古い行の分
 }
-/** 2回目以降：名前＋生年月日で前回の申込を探し、見つかれば「あなたについて・緊急連絡先」を入れてたたむ */
-let PRIOR_KEY = '';
+/** 2回目以降：氏名＋学校名。一致の有無だけ受け取り、前回の個人情報は取得しない。 */
+let PRIOR_KEY = '', PRIOR_FOUND = false, PRIOR_PENDING = false;
+const priorKey = () => [txt('sei'), txt('mei'), txt('school')].join('|');
+const reuseReady = () => !EDIT && val('repeat') === '2回目以降' && PRIOR_FOUND && PRIOR_KEY === priorKey();
 async function checkPrior() {
   if (EDIT || !INIT) return;
-  if (val('repeat') !== '2回目以降') { show('profileBox', true); msg('priorNote'); PRIOR_KEY = ''; return; }
-  const sei = txt('sei'), mei = txt('mei'), birth = $('birth').value;
-  if (!sei || !mei || !birth) { show('profileBox', true); return msg('priorNote', 'warn', '姓・名・生年月日を入れると、前回の申込の内容を探します。'); }
-  const key = [sei, mei, birth].join('|');
+  if (val('repeat') !== '2回目以降') { PRIOR_KEY = ''; PRIOR_FOUND = false; PRIOR_PENDING = false; show('profileBox', true); show('birthBox', true); show('emergencyBox', true); msg('priorNote'); return; }
+  const sei = txt('sei'), mei = txt('mei'), school = txt('school');
+  if (!sei || !mei || !school) { PRIOR_KEY = ''; PRIOR_FOUND = false; PRIOR_PENDING = false; show('profileBox', true); show('birthBox', true); return msg('priorNote', 'warn', '姓・名・学校名を入れると、前回の申込を探します。'); }
+  const key = priorKey();
   if (key === PRIOR_KEY) return;
-  PRIOR_KEY = key;
+  PRIOR_KEY = key; PRIOR_FOUND = false; PRIOR_PENDING = true;
   msg('priorNote', 'warn', '前回の申込を探しています…');
   try {
-    const r = await call({ action: 'entryPrior', payload: { sei, mei, birth } });
-    if (PRIOR_KEY !== key) return;   // 探している間に名前などが変わった
-    if (r.found) {
-      fillProfile(r.profile); show('profileBox', false);
-      msg('priorNote', 'ok', `前回（${esc(r.date)} の申込）の内容を使います。学校・学年・住所・アレルギー・緊急連絡先などは書かなくて大丈夫です。<br><button class="btn sub2" type="button" style="margin-top:8px;padding:8px 12px;font-size:14px" onclick="show('profileBox', true); this.remove()">前回の内容を確認・直す（変わったところがある人）</button>`);
+    const r = await call({ action: 'entryPrior', payload: { sei, mei, school } });
+    if (PRIOR_KEY !== key || key !== priorKey() || val('repeat') !== '2回目以降') return;
+    PRIOR_PENDING = false; PRIOR_FOUND = r.found && r.reusable !== false;
+    if (PRIOR_FOUND) {
+      show('profileBox', false); show('birthBox', false); $('birth').value = '';
+      msg('priorNote', 'ok', '前回の内容を運営側で引き継ぎます。緊急連絡先・契約書などの個人情報は表示しません。変更がある場合は運営へ連絡してください。');
     } else {
-      show('profileBox', true);
-      msg('priorNote', 'warn', '前回の申込が見つかりませんでした（前に申し込んだときと同じ名前・生年月日か確かめてください）。お手数ですが、下の項目を書いてください。契約書は前に出したものを使うので不要です（運営が確認します）。');
+      show('profileBox', true); show('birthBox', true); show('emergencyBox', true);
+      msg('priorNote', 'warn', r.found ? '前回の記録に未入力の項目があるため、下の項目を今回入力してください。前回の個人情報は表示しません。' : '前回の申込が見つかりませんでした。前に申し込んだときと同じ名前・学校名か確かめ、見つからない場合は下の項目を入力してください。');
     }
-  } catch (e) { PRIOR_KEY = ''; show('profileBox', true); msg('priorNote', 'ng', netErr(e)); }
+  } catch (e) { if (PRIOR_KEY !== key) return; PRIOR_KEY = ''; PRIOR_FOUND = false; PRIOR_PENDING = false; show('profileBox', true); show('birthBox', true); msg('priorNote', 'ng', netErr(e)); }
 }
 /** ② 名前＋生年月日で、自分の申込を一覧にする */
 async function findApps() {
