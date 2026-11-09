@@ -103,7 +103,7 @@
   <div class="field" id="birthBox"><label class="q req" id="birthLbl">生年月日</label><input type="date" id="birth" min="1950-01-01" max="2015-12-31">
     <div class="note">申込の変更・キャンセルのときに、名前と生年月日で自分の申込を探すのに使います。</div></div>
   <div class="field"><label class="q req" id="repeatLbl">DOBOLANDの短期インターンに参加するのは</label><div class="opts inline" id="o_repeat"></div>
-    <div class="note">2回目以降の人は名前と学校名で前回の申込を探せます。前回の内容は画面に表示せず、運営側で引き継ぎます。変更がある場合は運営へ連絡してください。</div></div>
+    <div class="note">2回目以降の人は名前と学校名で前回の申込を探せます。前回の内容は画面に表示せず、運営側で引き継ぎます。引き継いだ情報は、申込後に「申込の編集」から変更できます。契約書の変更は運営へ連絡してください。</div></div>
   <div id="priorNote"></div>
 
   <div id="profileBox">
@@ -121,12 +121,16 @@
     </div>
   </div>
 
+  <div id="emergencyEditBox" class="hidden"><h2>緊急連絡先の変更</h2>
+    <div class="opts"><label><input type="checkbox" id="updateEmergency" onchange="renderEmergencyEdit()">緊急連絡先を変更する</label></div>
+    <div class="note">登録済みの内容は表示しません。変更するときは、新しい氏名・続柄・電話番号をすべて入力してください。チェックしなければ現在の連絡先をそのまま残します。</div>
+  </div>
   <div id="emergencyBox"><h2>緊急連絡先</h2>
   <div class="field"><label class="q req">緊急連絡者氏名（緊急時連絡がつきやすい保護者等）</label><input type="text" id="emName"></div>
   <div class="field"><label class="q req" for="emRel">続柄</label><select id="emRel"><option value="">選んでください</option></select></div>
   <div class="field"><label class="q req">緊急連絡先（電話番号・ハイフンなし）</label><input type="tel" id="emTel" inputmode="numeric" placeholder="例）09012345678" oninput="this.value=this.value.replace(/[^0-9０-９]/g,'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248))"></div>
-  <div class="field"><label class="q">持病・配慮事項</label><div class="note" style="margin-bottom:6px">活動中に配慮してほしいことがあればご記入ください。</div><textarea id="care"></textarea></div>
   </div>
+  <div class="field"><label class="q">持病・配慮事項</label><div class="note" style="margin-bottom:6px">活動中に配慮してほしいことがあればご記入ください。</div><textarea id="care"></textarea></div>
   </div>
 
   <h2>参加するインターン</h2>
@@ -134,7 +138,8 @@
   <div id="baseBox" class="hidden">
     <div class="field hidden" id="kubunBox"><label class="q req">参加区分</label><div class="opts" id="o_kubun"></div></div>
     <div class="field"><label class="q req">参加希望日程</label>
-      <div class="note" style="margin-bottom:6px">参加したい日程にチェックし、その中で参加する日を選んでください。終わった日程の変更・キャンセルは、運営に連絡してください。</div>
+      <div class="note" style="margin-bottom:6px">日程が決まっていない場合は「日程未定」を選べます。決まったら申込の編集で変更してください。終わった日程の変更・キャンセルは、運営に連絡してください。</div>
+      <div id="undecidedBox" class="opts hidden"><label><input type="checkbox" id="scheduleUndecided" onchange="toggleUndecided()">日程未定（決まり次第、後から変更）</label></div>
       <div id="groups"></div></div>
   </div>
 
@@ -153,7 +158,7 @@
   <div class="ex">割引した分は、参加したあとに「交通費補助の申請」をすると、申請した翌月の15日に振り込まれます。中期インターン生・コンペ応募者は交通費の全額を支給します。</div>
 </div>
 
-  <div class="note" style="margin:6px 0 10px">交通費の割引の判定に使います。申し込んだあとに分かった場合は、運営に伝えてください。</div>
+  <div class="note" style="margin:6px 0 10px">交通費の割引の判定に使います。紹介した人・紹介された人は、申込後も編集で追加・訂正できます。保存すると最新の内容に更新します。削除するときは「いない」を選んでください。</div>
   <div class="field"><label class="q req">あなたをDOBOLANDに紹介した人はいますか</label>
     <div class="opts inline" id="o_referredByHas"></div>
     <div id="referredByBox" class="sub hidden"><div class="note" style="margin-bottom:4px">1つの欄に1人ずつ、名前を書いてください。</div>
@@ -210,7 +215,7 @@
   <a class="btn sub2" href="../intern/" style="display:block;text-align:center;text-decoration:none">TOPに戻る</a>
 </div>
 
-<div style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.30</span><span id="verWarn"></span></div>
+<div style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.31</span><span id="verWarn"></span></div>
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbzjijCkxJqBtT5ohNUSKpzjV0-lf8atf5VoauJ6KayenhkVzIu9QnY5rMeCjx9rKhSwJQ/exec';
@@ -304,6 +309,9 @@ function renderBase() {
   const base = val('base');
   show('baseBox', !!base); show('kubunBox', base === '千葉');
   const locked = EDIT && EDIT.base === base ? EDIT.locked || [] : [];
+  show('undecidedBox', !!(INIT.features && INIT.features.scheduleUndecided));
+  $('scheduleUndecided').disabled = locked.length > 0;
+  $('scheduleUndecided').checked = !!(EDIT && EDIT.base === base && EDIT.scheduleUndecided);
   const lockedNames = locked.map(l => l.name);
   const mine = EDIT && EDIT.base === base ? EDIT.dates || [] : [];
   const list = SHOWN = INIT.schedules.filter(s => s.base === base && !lockedNames.includes(s.name));
@@ -324,6 +332,7 @@ function renderBase() {
     g.checked = true; $('days' + i).classList.remove('hidden');
     $('days' + i).querySelectorAll('input').forEach(x => { x.checked = on.some(d => d.key === x.value); });
   });
+  toggleUndecided();
   const doc = base === '千葉' ? INIT.links.docChiba : base === '和歌山' ? INIT.links.docWakayama : '';
   const link = doc ? `<a href="${esc(doc)}" target="_blank" rel="noopener"><b>インターンシップ契約書 in${esc(base)}</b></a>` : '';
   $('docLinkBox').innerHTML = link || '先に「参加するインターン」を選ぶと、契約書のリンクが出ます。';
@@ -348,9 +357,21 @@ function renderContract() {
   }).join('');
 }
 function toggleGroup(el) {
+  if (el.checked) $('scheduleUndecided').checked = false;
   const box = $('days' + el.dataset.i);
   box.classList.toggle('hidden', !el.checked);
   box.querySelectorAll('input').forEach(x => { x.checked = el.checked; });   // 日程にチェックしたら全部の日を選んだ状態に（行かない日だけ外す）
+}
+function toggleUndecided() {
+  if ($('scheduleUndecided').checked) {
+    document.querySelectorAll('.gchk, input[name="dates"]').forEach(e => { e.checked = false; });
+    document.querySelectorAll('.days').forEach(e => e.classList.add('hidden'));
+  }
+}
+function renderEmergencyEdit() {
+  const privateEdit = !!(EDIT && EDIT.privateStored);
+  show('emergencyEditBox', privateEdit && EDIT.canUpdateEmergency === true);
+  show('emergencyBox', !privateEdit || (EDIT.canUpdateEmergency === true && $('updateEmergency').checked));
 }
 
 function gather() {
@@ -360,7 +381,8 @@ function gather() {
     trigger: val('trigger'), triggerOther: txt('triggerOther'), gender: val('gender'),
     allergyHas: val('allergyHas'), allergy: vals('allergy').filter(x => x !== 'その他'), allergyOther: vals('allergy').includes('その他') ? txt('allergyOther') : '',
     emName: txt('emName'), emRel: txt('emRel'), emTel: txt('emTel').replace(/[^0-9]/g, ''), care: txt('care'),
-    base: val('base'), kubun: val('base') === '千葉' ? val('kubun') : '', dates: vals('dates'),
+    base: val('base'), kubun: val('base') === '千葉' ? val('kubun') : '', dates: vals('dates'), scheduleUndecided:$('scheduleUndecided').checked,
+    updateEmergency:!!(EDIT && EDIT.privateStored && EDIT.canUpdateEmergency === true && $('updateEmergency').checked), editVersion:EDIT && EDIT.editVersion || '',
     referredByHas: val('referredByHas'), referredBy: refs('referredBy'), referredHas: val('referredHas'), referred: refs('referred'),
     contract: Object.fromEntries([...document.querySelectorAll('#ctFields input')].map(e => [e.dataset.label, e.value.trim()])), agree: $('agree').checked,
     birth: $('birth').value, repeat: val('repeat'), reusePrior: reuseReady(),
@@ -383,7 +405,7 @@ function validate(p) {
     if (vals('allergy').includes('その他') && !p.allergyOther) return 'アレルギー・食事制限の「その他」の内容を入力してください';
     if (!p.allergy.length && !p.allergyOther) return 'アレルギー・食事制限の内容を選ぶか、「その他」に書いてください';
   }
-  if (!(EDIT && EDIT.privateStored)) {
+  if (!(EDIT && EDIT.privateStored) || p.updateEmergency) {
     if (!p.emName) return '緊急連絡者氏名を入力してください';
     if (!p.emRel) return '続柄を選んでください';
     if (!/^0\d{9,10}$/.test(p.emTel)) return '緊急連絡先は電話番号（ハイフンなしの数字10〜11けた）で入力してください';
@@ -393,7 +415,8 @@ function validate(p) {
   if (p.base === '千葉' && !p.kubun) return '参加区分を選んでください';
   const groups = [...document.querySelectorAll('.gchk:checked')];
   const locked = EDIT && EDIT.base === p.base ? (EDIT.locked || []).length : 0;
-  if (!groups.length && !locked) return '参加希望日程を1つ以上選んでください（全部やめるときは上の「申込をキャンセルする」）';
+  if (p.scheduleUndecided && (groups.length || p.dates.length || locked)) return '日程未定と参加日程は同時に選べません';
+  if (!groups.length && !locked && !p.scheduleUndecided) return '参加希望日程か日程未定を選んでください（全部やめるときは上の「申込をキャンセルする」）';
   for (const g of groups) if (!document.querySelector(`#days${g.dataset.i} input:checked`)) return `${SHOWN[g.dataset.i].label} の参加する日を選んでください`;
   if (!p.referredByHas || (p.referredByHas === 'いる' && !p.referredBy)) return 'あなたを紹介した人について答えてください（いる場合は名前も）';
   if (!p.referredHas || (p.referredHas === 'いる' && !p.referred)) return 'あなたが紹介した人について答えてください（いる場合は名前も）';
@@ -411,6 +434,7 @@ function validate(p) {
 }
 const other = (v, o) => v === 'その他' && o ? 'その他：' + o : v;
 function dayLines() {
+  if ($('scheduleUndecided').checked) return '日程未定（決まり次第、申込の編集から変更）';
   const lock = EDIT && EDIT.base === val('base') ? (EDIT.locked || []).map(l => `${l.label}：${l.days.join('・')}（終了）`) : [];
   return lock.concat([...document.querySelectorAll('.gchk:checked')].map(g =>
     `${SHOWN[g.dataset.i].label}：` + [...document.querySelectorAll(`#days${g.dataset.i} input:checked`)].map(x => x.dataset.label).join('・'))).join('\n');
@@ -427,7 +451,7 @@ function toConfirm() {
     ['アレルギー・食事制限', allergy], ['緊急連絡者', `${p.emName}（${p.emRel}）　${p.emTel}`], ['持病・配慮事項', p.care || '—'],
     ['参加するインターン', (INIT.bases.find(b => b.base === p.base) || {}).label]];
   if (p.reusePrior) rows = rows.filter(([k]) => ['氏名', '学校名', '参加するインターン'].includes(k)).concat([['前回の申込内容', '運営側で引き継ぎます（個人情報は表示しません）']]);
-  if (EDIT && EDIT.privateStored) rows = rows.filter(([k]) => k !== '緊急連絡者');
+  if (EDIT && EDIT.privateStored && !p.updateEmergency) rows = rows.filter(([k]) => k !== '緊急連絡者');
   if (p.base === '千葉') rows.push(['参加区分', p.kubun]);
   rows.push(['参加する日', dayLines()], ['あなたを紹介した人', p.referredByHas === 'いる' ? p.referredBy : 'いない'], ['あなたが紹介した人', p.referredHas === 'いる' ? p.referred : 'いない']);
   if (p.repeat === '2回目以降' || (EDIT && EDIT.privateStored)) rows.push(['インターンシップ契約書', '提出済みの内容は表示しません。変更は運営へ連絡してください']);
@@ -469,7 +493,7 @@ async function loadEdit() {
     const d = await call({ action: 'entryLoad', payload: { id, sei, mei } });
     EDIT = d;
     $('sei').value = d.sei; $('mei').value = d.mei;
-    fillProfile(d); show('profileBox', true); show('emergencyBox', !d.privateStored); msg('priorNote');
+    fillProfile(d); show('profileBox', true); $('updateEmergency').checked = false; renderEmergencyEdit(); msg('priorNote');
     $('birth').value = d.birth || $('fBirth').value || ''; setRadio('repeat', d.repeat); renderContract();
     setRadio('base', d.base); setRadio('kubun', d.kubun); renderBase();
     $('agree').checked = !!d.agreed;   // 前に同意済み。内容を変えて送ると、その日時で作り直す
@@ -500,7 +524,7 @@ function fillProfile(d) {
   if (d.allergyOther) $('allergyOther').value = d.allergyOther;
   $('emName').value = d.emName || '';
   const relation = ({母:'母親', 父:'父親', 祖父:'祖父母', 祖母:'祖父母', 兄:'兄弟姉妹', 弟:'兄弟姉妹', 姉:'兄弟姉妹', 妹:'兄弟姉妹'})[d.emRel] || d.emRel || '';
-  $('emRel').value = [...$('emRel').options].some(o => o.value === relation) ? relation : 'その他';
+  $('emRel').value = !relation ? '' : ([...$('emRel').options].some(o => o.value === relation) ? relation : 'その他');
   $('care').value = d.care || '';
   $('emTel').value = /^[1-9]\d{8,9}$/.test(String(d.emTel)) ? '0' + d.emTel : (d.emTel || '');   // 先頭の0が消えていた古い行の分
 }
@@ -523,7 +547,7 @@ async function checkPrior() {
     PRIOR_PENDING = false; PRIOR_FOUND = r.found && r.reusable !== false;
     if (PRIOR_FOUND) {
       show('profileBox', false); show('birthBox', false); $('birth').value = '';
-      msg('priorNote', 'ok', '前回の内容を運営側で引き継ぎます。緊急連絡先・契約書などの個人情報は表示しません。変更がある場合は運営へ連絡してください。');
+      msg('priorNote', 'ok', '前回の内容を運営側で引き継ぎます。緊急連絡先・契約書などの個人情報は表示しません。引き継いだ情報は申込後に「申込の編集」から変更できます。契約書の変更は運営へ連絡してください。');
     } else {
       show('profileBox', true); show('birthBox', true); show('emergencyBox', true);
       msg('priorNote', 'warn', r.found ? '前回の記録に未入力の項目があるため、下の項目を今回入力してください。前回の個人情報は表示しません。' : '前回の申込が見つかりませんでした。前に申し込んだときと同じ名前・学校名か確かめ、見つからない場合は下の項目を入力してください。');
