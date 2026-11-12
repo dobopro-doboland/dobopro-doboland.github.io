@@ -219,12 +219,14 @@
 
   <!-- 経費 -->
   <div class="pane" id="p-expense">
+    <div id="perm" class="hint" style="margin-top:8px"></div>
+    <div id="eForm" hidden>
     <div class="edit-banner" id="eEdit">✏️ 経費を修正中です。<button class="mini" onclick="cancelExpEdit()">修正をやめる</button></div>
     <p class="hint"><b>何件でもまとめて申請できます</b>（1件＝領収書1枚）。<b>あなたに振り込まれるのは「本人立替」のときだけ</b>です。<b>レンタカー・ガソリンは（現地での分も）「🚃 交通費」で申請</b>してください。領収書は「名前_日付_PJ企画_金額」に自動で名前が変わります。</p>
     <div id="eCards"></div>
     <div class="bar"><button class="btn sub" type="button" id="eAdd" onclick="addExp()">＋ 経費を追加</button><span class="total" id="eTotal"></span></div>
-    <div id="perm" class="hint" style="margin-top:8px"></div>
     <div class="bar"><span></span><button class="btn" id="eSubmit" onclick="sendExpense()">経費台帳へ登録</button></div>
+    </div>
     <div id="eMsg"></div>
   </div>
 
@@ -244,7 +246,7 @@
   </div>
 
   <div id="bgToasts" style="position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:1000;display:flex;flex-direction:column;gap:6px;max-width:560px;margin:0 auto;pointer-events:none"></div>
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.38</span><span id="verWarn"></span></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.39</span><span id="verWarn"></span></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -504,10 +506,18 @@ function pineUpdate(v) {
 function onMember(first) {
   HIST = null;
   const m = INIT && INIT.members.find(x => x.name === member());
-  $('perm').textContent = !m ? '' : m.advance ? '立替権限：あり（全PJの実費を立替できます）' : '立替権限：なし（本人立替で登録すると「要確認」になり、管理者が扱いを判断します）';
+  $('eForm').hidden = !canSubmitExpense();
+  $('perm').textContent = canSubmitExpense() ? '' : !member()
+    ? (ADM() ? '上の「代理で入力するメンバー」を選んでください' : 'メンバーを選択してください')
+    : '立替権限がないため、経費の申請・修正はできません';
   if (m && m.pj && m.pj !== 'DL全体' && !$('bPj').value) $('bPj').value = m.pj;
   renderMeetings();
   if (!first && $('p-history').classList.contains('on')) loadHistory();
+}
+
+function canSubmitExpense() {
+  const name = member();
+  return !!(name && (ADM() || (INIT && INIT.members.some(m => m.name === name && m.advance))));
 }
 
 /* ---------- 日付の欄（管理者は「月」だけでもよい） ---------- */
@@ -882,6 +892,7 @@ function cancelExpEdit() { resetExpense(); msg('eMsg'); }
 
 async function sendExpense() {
   if (needMember('eMsg')) return;
+  if (!canSubmitExpense()) return msg('eMsg', 'ng', '立替権限がないため、経費の申請・修正はできません');
   const errs = [];
   const cards = [...document.querySelectorAll('#eCards .ecard')];
   const list = cards.map((d, i) => {
@@ -1278,7 +1289,7 @@ function renderHistory() {
     html = table(['申請月', '金額', 'PJ・企画', '予算元', '領収書', '精算', '状態', ''], HIST.expenses.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
       `<tr><td>${chk('expense', i)}${mon(x.date)}</td><td class="num">${yen(x.amount)}</td><td>${esc(pjL(x.pj))}</td><td>${esc(x.budget)}</td>
        <td>${link(x.url, '領収書')}${x.receipt && x.receipt !== x.url ? link(x.receipt, 'レシート') : ''}</td><td>${esc(x.settle)}</td><td><span class="badge ${esc(x.status)}">${esc(x.status)}</span></td>
-       <td><button class="mini" onclick="editExp(${i})">修正</button>${delBtn('expense', i)}</td></tr>`), '経費の記録はありません');
+       <td>${canSubmitExpense() ? `<button class="mini" onclick="editExp(${i})">修正</button>` : ''}${delBtn('expense', i)}</td></tr>`), '経費の記録はありません');
   }
   $('hList').innerHTML = html;
 }
@@ -1319,6 +1330,7 @@ function editAct(i) {
   msg('aMsg'); go('work');
 }
 function editExp(i) {
+  if (!canSubmitExpense()) return;
   const x = HIST.expenses[i];
   expEdit = x;
   $('eCards').innerHTML = ''; addExp(x);
