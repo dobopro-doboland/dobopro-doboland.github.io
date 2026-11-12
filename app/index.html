@@ -119,7 +119,6 @@
     <button data-p="group" onclick="go('group')" id="groupTab" style="display:none">👥 定例（リーダー）</button>
     <button data-p="transport" onclick="go('transport')">🚃 交通費</button>
     <button data-p="expense" onclick="go('expense')">💴 経費</button>
-    <button data-p="budgetreq" onclick="go('budgetreq')">📈 追加予算</button>
     <button data-p="history" onclick="go('history')">✏️ 修正</button>
   </div>
   <div class="admbar" id="admBar">
@@ -161,29 +160,6 @@
     <div class="bar"><button class="btn sub" type="button" id="tAdd" onclick="addTrans()">＋ 交通費を追加</button><span class="total" id="tTotal"></span></div>
     <div class="bar"><span class="hint">領収書は「交通費／あなたの名前」フォルダに自動で保存されます。「本人立替」の分は全額あなた（支払った人）に給与と一緒に精算されます。</span><button class="btn" id="tSubmit" onclick="sendTransport()">交通費を申請</button></div>
     <div id="tMsg"></div>
-  </div>
-
-  <!-- 追加予算 -->
-  <div class="pane" id="p-budgetreq">
-    <div class="edit-banner" id="bEdit">✏️ 追加予算の申請を修正中です。<button class="mini" onclick="cancelBudEdit()">修正をやめる</button></div>
-    <p class="hint">当初予算に入っていない費用や、予算を超えそうなときに申請します。管理者が承認すると「予算確定版」に加算されます。</p>
-    <div class="grid2">
-      <div><label>PJ・企画</label><select id="bPj"></select></div>
-      <div><label>小項目（何に使うか）</label><input id="bItem" placeholder="例：完成披露会の宿泊費（学生20名）"></div>
-      <div><label>使用予定月</label><select id="bMonth"></select></div>
-      <div><label>単価（円）</label><input type="number" id="bUnit" class="yen" inputmode="numeric" min="1" oninput="budSum()"></div>
-      <div><label>数量・回数</label><input type="number" id="bQty" min="1" value="1" oninput="budSum()"></div>
-      <div><label>区分</label><select id="bKind"><option>新規（当初予算にない）</option><option>増額（当初予算を超える）</option></select></div>
-    </div>
-    <div style="margin-top:10px" data-f="budgetreq.purpose"><label></label><textarea id="bPurpose"></textarea></div>
-    <div class="grid2" style="margin-top:10px">
-      <div data-f="budgetreq.link"><label></label><input type="url" id="bLink"></div>
-      <div data-f="budgetreq.file"><label></label><input type="file" id="bFile" accept="image/*,application/pdf"></div>
-    </div>
-    <div style="margin-top:10px" data-f="budgetreq.note"><label></label><input id="bNote"></div>
-    <div id="bExtra"></div>
-    <div class="bar"><span class="total" id="bTotal"></span><button class="btn" id="bSubmit" onclick="sendBudget()">追加予算を申請</button></div>
-    <div id="bMsg"></div>
   </div>
 
   <!-- 現地活動費 -->
@@ -234,7 +210,7 @@
   <div class="pane" id="p-history">
     <div class="filter">
       <label style="margin:0">表示</label>
-      <select id="hKind" onchange="renderHistory()"><option value="activity">稼働時間</option><option value="genba">現地活動費</option><option value="sns">SNS投稿</option><option value="transport">交通費</option><option value="expense">経費</option><option value="group" id="hKindGroup">定例（リーダーのまとめ申請）</option><option value="budgetreq">追加予算</option></select>
+      <select id="hKind" onchange="renderHistory()"><option value="activity">稼働時間</option><option value="genba">現地活動費</option><option value="sns">SNS投稿</option><option value="transport">交通費</option><option value="expense">経費</option><option value="group" id="hKindGroup">定例（リーダーのまとめ申請）</option></select>
       <label style="margin:0">月</label>
       <select id="hMonth" onchange="renderHistory()"><option value="">すべて</option></select>
       <button class="mini" onclick="loadHistory()">再読み込み</button>
@@ -246,7 +222,7 @@
   </div>
 
   <div id="bgToasts" style="position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:1000;display:flex;flex-direction:column;gap:6px;max-width:560px;margin:0 auto;pointer-events:none"></div>
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.39</span><span id="verWarn"></span></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.40</span><span id="verWarn"></span></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -333,7 +309,7 @@ const mon = d => (d ? Number(String(d).slice(5, 7)) + '月' : '');   // 申請�
 const fyIdx = d => (Number(String(d).slice(5, 7)) + 3) % 12;
 const fyYm = m => `${m >= 9 ? INIT.fy : INIT.fy + 1}-${pad(m)}`;
 
-// 追加予算以外の申請は「今月1日〜月末」の日付だけ（管理者の代理入力は年度内ならいつでも）
+// 申請は「今月1日〜月末」の日付だけ（管理者の代理入力は年度内ならいつでも）
 function monthMin() { return ADM() ? `${INIT.fy}-09-01` : today().slice(0, 7) + '-01'; }
 function monthMax() { if (ADM()) return `${INIT.fy + 1}-08-31`; const d = new Date(today() + 'T00:00'); return ymd(new Date(d.getFullYear(), d.getMonth() + 1, 0)); }
 function inMonth_(d) { return !!d && d >= monthMin() && d <= monthMax(); }
@@ -405,7 +381,7 @@ function applyForm() {
     if (inp) inp.placeholder = FC(s, k).hint || '';
     el.style.display = SHOW(s, k) ? '' : 'none';
   });
-  [['grpExtra', 'group'], ['bExtra', 'budgetreq']].forEach(([id, s]) => { $(id).innerHTML = extrasHtml(s); });
+  $('grpExtra').innerHTML = extrasHtml('group');
 }
 /** 追加の質問（その画面の最後に出す） */
 function extrasHtml(s) {
@@ -475,8 +451,6 @@ function applyInit(init, fresh) {   // fresh＝サーバーから届いた最新
   $('snsHint').textContent = 'SNS投稿は ' + snsKinds().map(k => `${k.name} 1件${Number(k.unit).toLocaleString()}円`).join('・') + ' です（今月の単価）。投稿ごとに1枚入力してください。';
   ['days', 'posts', 'gDays', 'tCards', 'eCards'].forEach(k => { $(k).innerHTML = ''; });
   addDay(); addPost(); addGenbaDay(); addTrans(); addExp();
-  $('bPj').innerHTML = pjOpts(init.pjs.filter(p => p !== 'DL全体'), '選択');   // 追加予算はDL全体では申請しない
-  $('bMonth').innerHTML = opts(FYM.map(m => `${m >= 9 ? init.fy : init.fy + 1}年${m}月`), '選択');
   $('hMonth').innerHTML = '<option value="">すべて</option>' + FYM.map(m => `<option value="${m}">${m}月</option>`).join('');
   $('groupTab').style.display = '';
   onMember(true);
@@ -510,7 +484,6 @@ function onMember(first) {
   $('perm').textContent = canSubmitExpense() ? '' : !member()
     ? (ADM() ? '上の「代理で入力するメンバー」を選んでください' : 'メンバーを選択してください')
     : '立替権限がないため、経費の申請・修正はできません';
-  if (m && m.pj && m.pj !== 'DL全体' && !$('bPj').value) $('bPj').value = m.pj;
   renderMeetings();
   if (!first && $('p-history').classList.contains('on')) loadHistory();
 }
@@ -1060,39 +1033,6 @@ function editTrans(i) {
   msg('tMsg'); go('transport');
 }
 
-/* ---------- 追加予算 ---------- */
-let budEdit = null;
-function budSum() { const t = (Number($('bUnit').value) || 0) * (Number($('bQty').value) || 0); $('bTotal').textContent = t ? `金額 ${t.toLocaleString()}円` : ''; }
-function resetBudget() { ['bItem','bUnit','bPurpose','bLink','bFile','bNote'].forEach(k => $(k).value = ''); $('bQty').value = 1; budEdit = null; $('bEdit').style.display = 'none'; $('bSubmit').textContent = '追加予算を申請'; applyForm(); budSum(); }
-function cancelBudEdit() { resetBudget(); msg('bMsg'); }
-async function sendBudget() {
-  if (needMember('bMsg')) return;
-  const errs = [];
-  const p = { id: budEdit ? budEdit.id : '', member: member(), pj: $('bPj').value, item: $('bItem').value.trim(), month: $('bMonth').value,
-    unit: $('bUnit').value, qty: $('bQty').value, kind: $('bKind').value, purpose: $('bPurpose').value.trim(), link: $('bLink').value.trim(), note: $('bNote').value.trim(), extra: readExtras($('bExtra'), errs) };
-  const miss = [['pj','PJ・企画'],['item','小項目'],['month','使用予定月'],['unit','単価'],['qty','数量・回数'],['kind','区分']].filter(([k]) => !p[k]).map(([,n]) => n);
-  [['purpose', 'purpose'], ['link', 'link'], ['note', 'note']].forEach(([k, f]) => { if (REQ('budgetreq', f) && !p[k]) miss.push(FC('budgetreq', f).label); });
-  if (REQ('budgetreq', 'file') && !$('bFile').files[0]) miss.push(FC('budgetreq', 'file').label);
-  if (miss.length) errs.unshift('未入力：' + miss.join('、'));
-  if (errs.length) return msg('bMsg', 'ng', errs.join('\n'));
-  if (!p.purpose) p.purpose = '（記入なし）';
-  if (p.extra.length) p.note = (p.note + p.extra.map(x => `｜${x.q}：${x.a}`).join('')).replace(/^｜/, '');
-  $('bSubmit').disabled = true; msg('bMsg', 'warn', '申請中…');
-  try { p.file = await readFileEl($('bFile')); } catch (e) { $('bSubmit').disabled = false; return msg('bMsg', 'ng', e.message); }
-  google.script.run.withSuccessHandler(r => {
-    $('bSubmit').disabled = false; msg('bMsg', 'ok', `${budEdit ? '修正しました' : '申請しました'}（${Number(r.amount).toLocaleString()}円）。管理者が承認すると予算に加わります。`);
-    resetBudget(); HIST = null;
-  }).withFailureHandler(e => { $('bSubmit').disabled = false; msg('bMsg', 'ng', 'エラー：' + e.message); }).submitBudgetRequest(p);
-}
-function editBud(i) {
-  const x = HIST.budgetRequests[i];
-  budEdit = x;
-  $('bPj').value = x.pj; $('bItem').value = x.item; $('bMonth').value = x.month; $('bUnit').value = x.unit; $('bQty').value = x.qty;
-  $('bKind').value = x.kind; $('bPurpose').value = x.purpose; $('bLink').value = x.link; $('bNote').value = x.note;
-  $('bEdit').style.display = 'block'; $('bSubmit').textContent = '修正を保存'; budSum();
-  msg('bMsg'); go('budgetreq');
-}
-
 /* ---------- リーダーのまとめ申請（管理者はどの定例でも） ---------- */
 function renderMeetings() {
   const me = member();
@@ -1281,10 +1221,6 @@ function renderHistory() {
       `<tr><td>${x.mine ? chk('trans', i) : ''}${mon(x.date)}</td><td>${esc(x.mode)}</td><td>${esc(x.route)}${link(x.url, '領収書')}</td><td class="num">${yen(x.amount)}${x.teiki > 0 ? `<br><span class="hint">領収書${yen(x.receiptAmount)}−定期${yen(x.teiki)}</span>` : ''}${x.settle && !/^本人立替/.test(x.settle) ? `<br><span class="hint">${esc(x.settle)}</span>` : ''}</td>
        <td>${x.split.map(s => esc(s.name) + ' ' + yen(s.amount)).join('<br>')}${x.mine ? '' : `<br><span class="hint">支払：${esc(x.payer)}</span>`}</td><td><span class="badge ${esc(x.status)}">${esc(x.status)}</span></td>
        <td>${x.mine ? `<button class="mini" onclick="editTrans(${i})">修正</button>${delBtn('trans', i)}` : ''}</td></tr>`), '交通費の記録はありません');
-  } else if (k === 'budgetreq') {
-    html = table(['申請日', 'PJ・企画', '小項目', '金額', '使用予定', '状態', ''], HIST.budgetRequests.map((x, i) =>
-      `<tr><td>${md(x.date)}</td><td>${esc(pjL(x.pj))}</td><td>${esc(x.item)}<br><span class="hint">${esc(x.purpose)}</span></td><td class="num">${yen(x.amount)}</td><td>${esc(x.month)}</td>
-       <td><span class="badge">${esc(x.status)}</span></td><td>${x.status === '承認' || x.status === '却下' ? '' : `<button class="mini" onclick="editBud(${i})">修正</button>${delBtn('bud', i)}`}</td></tr>`), '追加予算の申請はありません');
   } else {
     html = table(['申請月', '金額', 'PJ・企画', '予算元', '領収書', '精算', '状態', ''], HIST.expenses.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
       `<tr><td>${chk('expense', i)}${mon(x.date)}</td><td class="num">${yen(x.amount)}</td><td>${esc(pjL(x.pj))}</td><td>${esc(x.budget)}</td>
@@ -1298,7 +1234,6 @@ function delOne(kind, i, ok, ng) {
   if (kind === 'activity') r.deleteActivity(member(), HIST.activities[i]);
   else if (kind === 'allow') r.deleteAllowance(HIST.allowances[i].id, member());
   else if (kind === 'trans') r.deleteTransport(HIST.transports[i].id, member());
-  else if (kind === 'bud') r.deleteBudgetRequest(HIST.budgetRequests[i].id, member());
   else r.deleteExpense(HIST.expenses[i].id, member());
 }
 function askDel(btn, kind, i) {
