@@ -136,8 +136,7 @@
     </div>
     <div style="margin-top:10px" data-f="group.content"><label></label><textarea id="grpContent"></textarea></div>
     <div class="grid2" style="margin-top:10px">
-      <div data-f="group.url"><label></label><input type="url" id="grpUrl">
-        <div class="hint" style="margin-top:4px">URLか、ファイルの添付（Word・PDF・画像など、10MBまで）のどちらかでOK</div><input type="file" id="grpFile"></div>
+      <div data-f="group.url"><label></label><input type="url" id="grpUrl"></div>
       <div><label>全員の時間（分）</label><div style="display:flex;gap:6px"><input type="number" id="grpMin" min="5" step="5" placeholder="例：60" style="flex:1"><button class="btn sub" type="button" onclick="grpApplyAll()">全員に入れる</button></div></div>
     </div>
     <div id="grpExtra"></div>
@@ -210,7 +209,7 @@
   <div class="pane" id="p-history">
     <div class="filter">
       <label style="margin:0">表示</label>
-      <select id="hKind" onchange="renderHistory()"><option value="activity">稼働時間</option><option value="genba">現地活動費</option><option value="sns">SNS投稿</option><option value="transport">交通費</option><option value="expense">経費</option><option value="group" id="hKindGroup">定例（リーダーのまとめ申請）</option></select>
+      <select id="hKind" onchange="renderHistory()"><option value="all">すべての区分</option><option value="activity">稼働時間</option><option value="genba">現地活動費</option><option value="sns">SNS投稿</option><option value="transport">交通費</option><option value="expense">経費</option><option value="group" id="hKindGroup">定例（リーダーのまとめ申請）</option></select>
       <label style="margin:0">月</label>
       <select id="hMonth" onchange="renderHistory()"><option value="">すべて</option></select>
       <button class="mini" onclick="loadHistory()">再読み込み</button>
@@ -222,7 +221,7 @@
   </div>
 
   <div id="bgToasts" style="position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:1000;display:flex;flex-direction:column;gap:6px;max-width:560px;margin:0 auto;pointer-events:none"></div>
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.40</span><span id="verWarn"></span></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.41</span><span id="verWarn"></span></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -372,7 +371,6 @@ const LBL = (s, k, opt) => `<label class="${!FC(s, k).fixed && !REQ(s, k) ? 'opt
 const PH = (s, k, def) => esc(FC(s, k).hint || def || '');
 /** data-f のついた欄に表示名・説明を入れ、非表示の欄を隠す */
 function applyForm() {
-  if ($('grpFile')) $('grpFile').accept = DELIV_ACCEPT;
   document.querySelectorAll('[data-f]').forEach(el => {
     const [s, k] = el.dataset.f.split('.');
     const lb = el.querySelector('label');
@@ -451,7 +449,11 @@ function applyInit(init, fresh) {   // fresh＝サーバーから届いた最新
   $('snsHint').textContent = 'SNS投稿は ' + snsKinds().map(k => `${k.name} 1件${Number(k.unit).toLocaleString()}円`).join('・') + ' です（今月の単価）。投稿ごとに1枚入力してください。';
   ['days', 'posts', 'gDays', 'tCards', 'eCards'].forEach(k => { $(k).innerHTML = ''; });
   addDay(); addPost(); addGenbaDay(); addTrans(); addExp();
-  $('hMonth').innerHTML = '<option value="">すべて</option>' + FYM.map(m => `<option value="${m}">${m}月</option>`).join('');
+  const currentMonth = today().slice(0, 7);
+  $('hMonth').innerHTML = '<option value="">すべての月</option>' + FYM.map(m => {
+    const month = fyYm(m);
+    return `<option value="${month}"${month === currentMonth ? ' selected' : ''}>${m}月</option>`;
+  }).join('');
   $('groupTab').style.display = '';
   onMember(true);
   go(document.querySelector('.tabs button.on') ? document.querySelector('.tabs button.on').dataset.p : (B.page === 'activity' ? 'work' : (B.page || 'work')));
@@ -479,6 +481,8 @@ function pineUpdate(v) {
 }
 function onMember(first) {
   HIST = null;
+  HISTORY_REQUEST++;
+  clearGroupHistory();
   const m = INIT && INIT.members.find(x => x.name === member());
   $('eForm').hidden = !canSubmitExpense();
   $('perm').textContent = canSubmitExpense() ? '' : !member()
@@ -543,9 +547,7 @@ function addItem(day, v) {
       <div class="chips">${[15,30,60,90,120,180].map(x=>`<button type="button" onclick="setMin(this,${x})">${x<60?x+'分':x/60+'時間'}</button>`).join('')}</div></div></div>
     <div class="row"><label class="${ADM() ? 'opt' : ''}">活動区分</label><select class="cat">${opts(cats, ADM() ? '（なし）' : '選択')}</select></div>
     <div class="row" style="${SHOW('work', 'content') ? '' : 'display:none'}">${LBL('work', 'content')}<textarea class="content" placeholder="${PH('work', 'content')}">${esc(v.content || '')}</textarea></div>
-    <div class="row" style="${SHOW('work', 'url') ? '' : 'display:none'}">${LBL('work', 'url')}<div><input type="url" class="url" placeholder="${PH('work', 'url')}" value="${esc(v.url || '')}">
-      <div class="hint" style="margin-top:4px">URLがないときは、ファイルを添付（Word・Excel・PowerPoint・PDF・画像など、10MBまで）${v.url ? '。変えるときだけ選択' : ''}</div>
-      <input type="file" class="aFile" accept="${DELIV_ACCEPT}"></div></div>
+    <div class="row" style="${SHOW('work', 'url') ? '' : 'display:none'}">${LBL('work', 'url')}<input type="url" class="url" placeholder="${PH('work', 'url')}" value="${esc(v.url || '')}"></div>
     ${extrasHtml('work')}`;
   day.querySelector('.items').appendChild(d);
   if (v.category) d.querySelector('.cat').value = v.category;
@@ -562,8 +564,6 @@ function readDays(errs) {
     const date = day.querySelector('.dDate').value;
     const items = [...day.querySelectorAll('.card')].map((c, n) => {
       const it = { minutes: c.querySelector('.min').value, category: c.querySelector('.cat').value, content: c.querySelector('.content').value.trim(), url: c.querySelector('.url').value.trim() };
-      Object.defineProperty(it, '_f', { value: c.querySelector('.aFile'), enumerable: false });   // 送る前にファイルを読む（JSONには入れない）
-      it.hasFile = !!(it._f && it._f.files[0]);
       it.extra = readExtras(c, errs, `${date || '日付なし'} 活動${n + 1}：`);
       return it;
     }).filter(i => i.minutes || i.content || (!ADM() && i.category));
@@ -575,20 +575,7 @@ function readDays(errs) {
 function resetActivity() { $('days').innerHTML = ''; addDay(); actEdit = null; $('aEdit').style.display = 'none'; $('addDayBtn').style.display = ''; $('aSubmit').textContent = '給与タブへ反映'; }
 function cancelActEdit() { resetActivity(); msg('aMsg'); }
 
-/** 成果物として添付できるファイル */
-const DELIV_ACCEPT = '.doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.txt,.csv,.rtf,.odt,.ods,.odp,.key,.pages,.numbers,.zip,image/*';
-/** 成果物ファイルを読む（写真は小さくしてから。ほかはそのまま、10MBまで） */
-async function readDelivFile(el) {
-  const f = el && el.files[0];
-  if (!f) return null;
-  const ext = (f.name.match(/\.([A-Za-z0-9]+)$/) || [])[1] || '';
-  if (!/^(docx?|xlsx?|pptx?|pdf|txt|csv|rtf|odt|ods|odp|key|pages|numbers|zip|jpe?g|png|gif|webp|heic|heif)$/i.test(ext)) throw new Error(`このファイルは添付できません（${f.name}）。Word・Excel・PowerPoint・PDF・画像などにしてください`);
-  const img = /^image\//.test(f.type);
-  const small = img && typeof pineShrink === 'function' ? await pineShrink(f) : null, src = small || f;
-  if (src.size > 10 * 1024 * 1024) throw new Error(`${f.name}：10MBを超えています。Googleドライブに置いてURLを入れてください`);
-  return new Promise((ok, ng) => { const rd = new FileReader(); rd.onload = () => ok({ name: small ? f.name.replace(/\.\w+$/, '') + '.jpg' : f.name, mime: small ? 'image/jpeg' : (f.type || 'application/octet-stream'), data: String(rd.result).split(',')[1] }); rd.onerror = () => ng(new Error('ファイルを読み込めませんでした')); rd.readAsDataURL(src); });
-}
-async function sendActivity() {
+function sendActivity() {
   if (needMember('aMsg')) return;
   const errs = [], days = readDays(errs);
   if (!days.length) errs.push('活動を1件以上入力してください');
@@ -598,15 +585,13 @@ async function sendActivity() {
       const t = `${d.date} 活動${n + 1}：`;
       if (!(Number(i.minutes) > 0) || (!ADM() && !i.category)) errs.push(t + (ADM() ? '時間は必須です' : '時間・活動区分は必須です'));   // 管理者は日付と時間だけでよい
       if (REQ('work', 'content') && !i.content) errs.push(t + FC('work', 'content').label + 'は必須です');
-      if (REQ('work', 'url') && !i.hasFile && !/^https?:\/\/\S+/.test(i.url)) errs.push(t + FC('work', 'url').label + 'は必須です（資料・投稿・議事録などのリンクか、ファイルの添付）');
+      if (REQ('work', 'url') && !/^https?:\/\/\S+/.test(i.url)) errs.push(t + FC('work', 'url').label + 'は必須です（資料・投稿・議事録などのURL）');
       if (i.url && !/^https?:\/\/\S+/.test(i.url)) errs.push(t + 'URLは https:// から始めてください');
     });
   });
   if (errs.length) return msg('aMsg', 'ng', errs.join('\n'));
-  $('aSubmit').disabled = true; msg('aMsg', 'warn', days.some(d => d.items.some(i => i.hasFile)) ? 'ファイルを送信中…（大きいファイルは少し時間がかかります）' : '反映中…');
+  $('aSubmit').disabled = true; msg('aMsg', 'warn', '反映中…');
   const fail = e => { $('aSubmit').disabled = false; msg('aMsg', 'ng', 'エラー：' + e.message); };
-  try { for (const d of days) for (const i of d.items) { if (i.hasFile) i.file = await readDelivFile(i._f); delete i.hasFile; } }
-  catch (e) { return fail(e); }
   if (actEdit) {
     return google.script.run.withSuccessHandler(res => {
       $('aSubmit').disabled = false;
@@ -1070,34 +1055,44 @@ function grpApplyAll() { document.querySelectorAll('#grpMembers .gRow').forEach(
 function readGroup() { return [...document.querySelectorAll('#grpMembers .gRow')].filter(r => r.querySelector('.gOn2').checked).map(r => ({ name: r.dataset.name, minutes: Number(r.querySelector('.gMin').value) || 0, next: r.querySelector('.gNext').value.trim() })); }
 function grpSum() { const l = readGroup(); $('grpTotal').textContent = `${l.length}人` + (l.some(x => !x.minutes) ? '（時間が空の人がいます）' : ''); }
 /* ---------- 定例のまとめ申請の修正・削除 ---------- */
-let GRP_HIST = null, GRP_EDIT = null, HIST_AFTER = null;   // HIST_AFTER：一覧を読み直したあとに出すメッセージ
-/** 修正タブ：定例のまとめ申請（自分がリーダーの定例。管理者は全部）の一覧 */
-function renderGroupHist() {
+let GRP_HIST = null, GRP_EDIT = null, GRP_REQUEST = null, GRP_ERROR = '', HIST_AFTER = null;
+function renderGroupHist(inMonth, empty) {
+  if (GRP_ERROR) return `<p class="hint">定例を読み込めませんでした：${esc(GRP_ERROR)}</p>`;
   if (GRP_HIST === null) {
-    $('hList').innerHTML = '<p class="hint">読み込み中…</p>';
-    GRP_HIST = [];
-    google.script.run.withSuccessHandler(list => { GRP_HIST = (list || []).filter(g => inMonth_(g.date)); renderGroupHist(); })
-      .withFailureHandler(e => { GRP_HIST = null; $('hList').innerHTML = `<p class="hint">読み込めませんでした：${esc(e.message)}</p>`; }).getGroupHistory();
-    return;
+    withGroupHist();
+    return '<p class="hint">定例を読み込み中…</p>';
   }
-  const mf = $('hMonth').value;
-  const rows = GRP_HIST.map((g, i) => [g, i]).filter(([g]) => !mf || monthOf(g.date) == mf);
-  $('bulkDel').style.display = 'none';
-  $('hList').innerHTML = `<p class="hint">自分がリーダーの定例で、今月まとめて申請した分です（管理者はすべての定例）。「修正」で直すと、前の分は参加者全員の給与タブから消えて入れ直されます。</p>` +
-    table(['日付', '定例', '参加者', ''], rows.map(([g, i]) =>
-      `<tr><td>${md(g.date)}</td><td>${esc(g.category)}<br><span class="hint">${esc(g.content)}</span></td><td>${g.members.length}人<br><span class="hint">${g.members.map(x => esc(String(x.name).replace(/^[^\p{L}\p{N}]+/u, '')) + ' ' + x.minutes + '分').join('、')}</span></td>
-       <td><button class="mini" onclick="editGroup(${i})">修正</button> <button class="mini del" onclick="delGroup(${i})">削除</button></td></tr>`), 'まとめ申請した定例はありません（リーダーの定例だけ表示されます）');
+  const rows = GRP_HIST.map((g, i) => [g, i]).filter(([g]) => inMonth(g.date));
+  return table(['日付', '定例', '参加者', ''], rows.map(([g, i]) =>
+    `<tr><td>${md(g.date)}</td><td>${esc(g.category)}<br><span class="hint">${esc(g.content)}</span></td><td>${g.members.length}人<br><span class="hint">${g.members.map(x => esc(String(x.name).replace(/^[^\p{L}\p{N}]+/u, '')) + ' ' + x.minutes + '分').join('、')}</span></td>
+     <td>${inMonth_(g.date) ? `<button class="mini" onclick="editGroup(${i})">修正</button> <button class="mini del" onclick="delGroup(${i})">削除</button>` : ''}</td></tr>`), empty);
 }
 /** 自分がリーダーの定例（管理者はすべて） */
 function leadCats() { const me = member(); return new Set((INIT && INIT.meetings || []).filter(m => ADM() || (me && m.leader === me)).map(m => m.name)); }
 function leaderOf(cat) { const m = (INIT && INIT.meetings || []).find(x => x.name === cat); return m && m.leader ? String(m.leader).replace(/^[^\p{L}\p{N}]+/u, '') : ''; }
 /** まとめ申請の一覧を読んでから fn を実行 */
 function withGroupHist(fn) {
-  if (GRP_HIST && GRP_HIST.length) return fn();
-  msg('hMsg', 'warn', '定例の記録を読み込み中…');
-  google.script.run.withSuccessHandler(list => { GRP_HIST = (list || []).filter(g => inMonth_(g.date)); msg('hMsg'); fn(); })
-    .withFailureHandler(e => { GRP_HIST = null; msg('hMsg', 'ng', 'エラー：' + e.message); }).getGroupHistory();
+  if (GRP_HIST !== null) { if (fn) fn(); return; }
+  if (GRP_REQUEST) { if (fn) GRP_REQUEST.push(fn); return; }
+  const pending = fn ? [fn] : [];
+  GRP_REQUEST = pending;
+  GRP_ERROR = '';
+  google.script.run.withSuccessHandler(list => {
+    if (GRP_REQUEST !== pending) return;
+    GRP_REQUEST = null;
+    GRP_HIST = list || [];
+    if (pending.length) msg('hMsg');
+    renderHistory(true);
+    pending.forEach(callback => callback());
+  }).withFailureHandler(e => {
+    if (GRP_REQUEST !== pending) return;
+    GRP_REQUEST = null;
+    GRP_ERROR = e.message;
+    if (pending.length) msg('hMsg', 'ng', '定例を読み込めませんでした：' + e.message);
+    renderHistory(true);
+  }).getGroupHistory(member());
 }
+function clearGroupHistory() { GRP_HIST = null; GRP_REQUEST = null; GRP_ERROR = ''; }
 /** 稼働時間の i 行目が入っている、まとめ申請（GRP_HIST の番号） */
 function grpOfAct(i) {
   const a = HIST.activities[i], n = s => String(s || '').replace(/\s+/g, '').toLowerCase();
@@ -1109,7 +1104,11 @@ function grpOfAct(i) {
 const GRP_NOT_FOUND = 'この定例のまとめ申請が見つかりませんでした。上の「定例の一覧を開く」から探してください（今月の分だけ直せます）';
 function editGroupFromAct(i) { withGroupHist(() => { const k = grpOfAct(i); if (k < 0) return msg('hMsg', 'warn', GRP_NOT_FOUND); editGroup(k); }); }
 function delGroupFromAct(i) { withGroupHist(() => { const k = grpOfAct(i); if (k < 0) return msg('hMsg', 'warn', GRP_NOT_FOUND); delGroup(k); }); }
-function loadGroupHist() { GRP_HIST = null; if ($('hKind').value === 'group') renderGroupHist(); }
+function invalidateGroupHistory() {
+  if ($('p-history').classList.contains('on')) return loadHistory();
+  clearGroupHistory();
+  HIST = null;
+}
 function editGroup(i) {
   const g = GRP_HIST[i];
   if (!g) return;
@@ -1127,7 +1126,7 @@ function editGroup(i) {
   $('grpEdit').style.display = 'block'; $('grpSubmit').textContent = '修正を保存'; msg('grpMsg');
   window.scrollTo(0, 0);
 }
-function cancelGroupEdit() { GRP_EDIT = null; $('grpEdit').style.display = 'none'; $('grpSubmit').textContent = 'まとめて申請'; $('grpContent').value = ''; $('grpUrl').value = ''; $('grpFile').value = ''; $('grpMembers').innerHTML = ''; renderGroupMembers(); msg('grpMsg'); }
+function cancelGroupEdit() { GRP_EDIT = null; $('grpEdit').style.display = 'none'; $('grpSubmit').textContent = 'まとめて申請'; $('grpContent').value = ''; $('grpUrl').value = ''; $('grpMembers').innerHTML = ''; renderGroupMembers(); msg('grpMsg'); }
 function delGroup(i) {
   const g = GRP_HIST[i];
   if (!g || !confirm(`${md(g.date)}の「${g.category}」（${g.members.length}人分）を削除します。参加者全員の給与タブから消えます。よろしいですか？`)) return;
@@ -1137,18 +1136,17 @@ function delGroup(i) {
     const note = [ng.length ? 'warn' : 'ok', (ng.length ? '削除しました（見つからなかった人：' + ng.map(r => r.name).join('、') + '）' : '削除しました') + `：${md(g.date)} ${g.category}（${g.members.length}人分）`];
     if (GRP_EDIT === g) cancelGroupEdit();
     msg('grpMsg', note[0], note[1]);
-    if ($('hKind').value === 'group') { msg('hMsg', note[0], note[1]); loadGroupHist(); } else { HIST_AFTER = note; loadHistory(); }
+    HIST_AFTER = note; loadHistory();
   }).withFailureHandler(e => msg('grpMsg', 'ng', 'エラー：' + e.message)).deleteGroupActivity({ orig: g });
 }
-async function sendGroup() {
+function sendGroup() {
   if (needMember('grpMsg')) return;
   const members = readGroup(), errs = [];
   const p = { leader: member(), date: $('grpDate').value, category: $('grpCat').value, content: $('grpContent').value.trim(), url: $('grpUrl').value.trim(), members, extra: readExtras($('grpExtra'), errs) };
   if (!p.date) errs.push('日付'); else if (!inMonth_(p.date)) return msg('grpMsg', 'ng', MONTH_NG());
   if (!p.category) errs.push('定例');
   if (REQ('group', 'content') && !p.content) errs.push(FC('group', 'content').label);
-  const gFile = !!$('grpFile').files[0];
-  if (REQ('group', 'url') && !gFile && !/^https?:\/\/\S+/.test(p.url)) errs.push(FC('group', 'url').label + '（URLかファイル）');
+  if (REQ('group', 'url') && !/^https?:\/\/\S+/.test(p.url)) errs.push(FC('group', 'url').label);
   if (p.url && !/^https?:\/\/\S+/.test(p.url)) return msg('grpMsg', 'ng', 'URLは https:// から始めてください');
   if (errs.length) return msg('grpMsg', 'ng', '未入力：' + errs.join('、'));
   if (!members.length) return msg('grpMsg', 'ng', '参加したメンバーにチェックを入れてください');
@@ -1156,20 +1154,18 @@ async function sendGroup() {
   const edit = GRP_EDIT;
   if (edit) p.orig = edit;
   $('grpSubmit').disabled = true; msg('grpMsg', 'warn', `${members.length}人分を${edit ? '修正' : '申請'}中…（1人数秒かかります）`);
-  if (gFile) { try { p.file = await readDelivFile($('grpFile')); } catch (e) { $('grpSubmit').disabled = false; return msg('grpMsg', 'ng', e.message); } }
   const run = google.script.run.withSuccessHandler(rs => {
     $('grpSubmit').disabled = false;
     const ok = rs.every(r => r.status === '反映済');
     msg('grpMsg', ok ? 'ok' : 'warn', (edit ? '修正しました\n' : '') + rs.map(r => `${r.name}：${r.minutes}分 → ${r.status}${r.reason ? '（' + r.reason + '）' : ''}`).join('\n'));
     if (edit) { GRP_EDIT = null; $('grpEdit').style.display = 'none'; $('grpSubmit').textContent = 'まとめて申請'; }
-    $('grpFile').value = '';
-    loadGroupHist();
+    invalidateGroupHistory();
   }).withFailureHandler(e => { $('grpSubmit').disabled = false; msg('grpMsg', 'ng', 'エラー：' + e.message); });
   if (edit) return run.updateGroupActivity(p);
   $('grpSubmit').disabled = false;
   bgSend({ label: `定例「${p.category}」（${members.length}人分）`, box: null, msgId: 'grpMsg',
-    reset: () => { $('grpContent').value = ''; $('grpUrl').value = ''; $('grpFile').value = ''; $('grpMembers').innerHTML = ''; renderGroupMembers(); },
-    restore: () => {   // 失敗したら入力を戻す（ファイルは選び直し）
+    reset: () => { $('grpContent').value = ''; $('grpUrl').value = ''; $('grpMembers').innerHTML = ''; renderGroupMembers(); },
+    restore: () => {   // 失敗したら入力を戻す
       $('grpCat').value = p.category; $('grpDate').value = p.date; $('grpContent').value = p.content; $('grpUrl').value = p.url;
       $('grpMembers').innerHTML = ''; renderGroupMembers();
       p.members.forEach(x => { if (!document.querySelector(`#grpMembers .gRow[data-name="${CSS.escape(x.name)}"]`)) renderGroupMembers(x.name); });
@@ -1177,57 +1173,83 @@ async function sendGroup() {
       grpSum();
     },
     call: run => run.submitGroupActivity(p),
-    done: rs => { GRP_HIST = null; const ok = rs.every(r => r.status === '反映済'); return { ok, text: ok ? '反映しました' : rs.map(r => `${r.name}：${r.minutes}分 → ${r.status}${r.reason ? '（' + r.reason + '）' : ''}`).join('\n') }; } });
+    done: rs => { invalidateGroupHistory(); const ok = rs.every(r => r.status === '反映済'); return { ok, text: ok ? '反映しました' : rs.map(r => `${r.name}：${r.minutes}分 → ${r.status}${r.reason ? '（' + r.reason + '）' : ''}`).join('\n') }; } });
 }
 
 /* ---------- 履歴（修正・削除） ---------- */
+let HISTORY_REQUEST = 0;
 function loadHistory() {
-  if (!member()) { $('hList').innerHTML = ''; return msg('hMsg', 'warn', ADM() ? '上の「代理で入力するメンバー」を選んでください' : 'メンバーを選択してください'); }
+  const request = ++HISTORY_REQUEST, name = member();
+  HIST = null;
+  clearGroupHistory();
+  $('hList').innerHTML = '';
+  $('hLead').style.display = 'none';
+  $('bulkDel').style.display = 'none';
+  if (!name) return msg('hMsg', 'warn', ADM() ? '上の「代理で入力するメンバー」を選んでください' : 'メンバーを選択してください');
   msg('hMsg', 'warn', '読み込み中…');
-  GRP_HIST = null;
-  google.script.run.withSuccessHandler(h => { HIST = h; if (HIST_AFTER) msg('hMsg', HIST_AFTER[0], HIST_AFTER[1]); else msg('hMsg'); HIST_AFTER = null; renderHistory(); })
-    .withFailureHandler(e => msg('hMsg', 'ng', 'エラー：' + e.message)).getHistory(member());
+  google.script.run.withSuccessHandler(h => {
+    if (request !== HISTORY_REQUEST || member() !== name) return;
+    HIST = h;
+    if (HIST_AFTER) msg('hMsg', HIST_AFTER[0], HIST_AFTER[1]); else msg('hMsg');
+    HIST_AFTER = null;
+    renderHistory();
+  }).withFailureHandler(e => {
+    if (request === HISTORY_REQUEST && member() === name) msg('hMsg', 'ng', 'エラー：' + e.message);
+  }).getHistory(name);
 }
-const monthOf = d => Number(String(d).slice(5, 7));
 const md = d => esc(String(d).slice(5).replace('-', '/'));
 const yen = n => '¥' + Number(n || 0).toLocaleString();
 const link = (u, t) => u ? ` <a href="${esc(u)}" target="_blank">${t}</a>` : '';
 function delBtn(kind, i) { return `<button class="mini del" onclick="askDel(this,'${kind}',${i})">削除</button>`; }
 const chk = (kind, i) => ADM() ? `<input type="checkbox" class="hSel" data-k="${kind}" data-i="${i}" style="width:auto"> ` : '';
-function table(head, rows, empty) { return !rows.length ? `<p class="hint">${empty}</p>` : `<table class="list"><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr>${rows.join('')}</table>`; }
-function renderHistory() {
+function table(head, rows, empty) { return !rows.length ? (empty ? `<p class="hint">${empty}</p>` : '') : `<table class="list"><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr>${rows.join('')}</table>`; }
+function renderHistory(keepSelection = false) {
   if (!HIST) return;
-  $('bulkDel').style.display = ADM() ? '' : 'none';
-  const mf = $('hMonth').value, k = $('hKind').value;
-  const inMonth = d => !mf || monthOf(d) == mf;
-  const lc = leadCats();
-  $('hKindGroup').hidden = !ADM() && !lc.size;
-  $('hLead').style.display = !ADM() && lc.size && k !== 'group' ? '' : 'none';
+  const picker = $('hKind'), lc = leadCats(), canSeeGroups = ADM() || lc.size > 0;
+  const groupOption = $('hKindGroup');
+  groupOption.hidden = !canSeeGroups;
+  if (picker.value === 'group' && !canSeeGroups) picker.value = 'all';
+  const k = picker.value, month = $('hMonth').value;
+  const inMonth = d => !month || String(d).slice(0, 7) === month;
+  $('bulkDel').style.display = ADM() && k !== 'group' ? '' : 'none';
+  $('hLead').style.display = !ADM() && lc.size && k !== 'group' && k !== 'all' ? '' : 'none';
   if (lc.size) $('hLead').innerHTML = `👥 あなたがリーダーの定例（${[...lc].map(esc).join('・')}）は、下の一覧の「修正」「削除」か、<button class="mini" onclick="$('hKind').value='group';renderHistory()">定例の一覧を開く</button> から直せます（参加者全員の分がまとめて直ります）。`;
-  if (k === 'group') return renderGroupHist();
+  const kinds = [...picker.options].filter(option => option.value !== 'all' && !option.hidden);
+  const sections = kinds.filter(option => k === 'all' || option.value === k).map(option => {
+    const content = renderHistoryKind(option.value, inMonth, lc, k === 'all');
+    return k === 'all' && content ? `<section><h3>${esc(option.textContent)}</h3>${content}</section>` : content;
+  }).join('');
+  const list = $('hList'), selectionKey = box => `${box.dataset.k}:${box.dataset.i}`;
+  const selected = keepSelection ? new Set([...list.querySelectorAll('.hSel:checked')].map(selectionKey)) : null;
+  list.innerHTML = sections || '<p class="hint">該当する申請はありません</p>';
+  if (selected?.size) list.querySelectorAll('.hSel').forEach(box => { box.checked = selected.has(selectionKey(box)); });
+}
+function renderHistoryKind(k, inMonth, lc, hideEmpty) {
+  if (k === 'group') return renderGroupHist(inMonth, hideEmpty ? '' : 'まとめ申請した定例はありません');
+  const historyTable = (head, rows, empty) => table(head, rows, hideEmpty ? '' : empty);
   const grp = c => /MTG|定例会|定例$|本幹部会/.test(c) && !/定例除く/.test(c);
   let html = '';
   if (k === 'activity') {
-    html = table(['日付', '時間', '区分', '内容', '成果物', ''], HIST.activities.map((a, i) => [a, i]).filter(([a]) => inMonth(a.date)).map(([a, i]) =>
+    html = historyTable(['日付', '時間', '区分', '内容', '成果物', ''], HIST.activities.map((a, i) => [a, i]).filter(([a]) => inMonth(a.date)).map(([a, i]) =>
       `<tr><td>${chk('activity', i)}${md(a.date)}</td><td class="num">${a.hours}h</td><td>${esc(a.category)}</td><td>${esc(a.content)}</td><td>${link(a.url, '開く')}</td>
-       <td>${grp(a.category) && !ADM() ? (leadCats().has(a.category) ? `<button class="mini" onclick="editGroupFromAct(${i})">修正</button> <button class="mini del" onclick="delGroupFromAct(${i})">削除</button><br><span class="hint">参加者全員の分</span>` : `<span class="hint">リーダー${leaderOf(a.category) ? '（' + esc(leaderOf(a.category)) + '）' : ''}が修正</span>`) : `<button class="mini" onclick="editAct(${i})">修正</button>${delBtn('activity', i)}`}</td></tr>`), '稼働時間の記録はありません');
+       <td>${grp(a.category) && !ADM() ? (lc.has(a.category) ? `<button class="mini" onclick="editGroupFromAct(${i})">修正</button> <button class="mini del" onclick="delGroupFromAct(${i})">削除</button><br><span class="hint">参加者全員の分</span>` : `<span class="hint">リーダー${leaderOf(a.category) ? '（' + esc(leaderOf(a.category)) + '）' : ''}が修正</span>`) : `<button class="mini" onclick="editAct(${i})">修正</button>${delBtn('activity', i)}`}</td></tr>`), '稼働時間の記録はありません');
   } else if (k === 'genba' || k === 'sns') {
     const rows = HIST.allowances.map((a, i) => [a, i]).filter(([a]) => a.type === k && inMonth(a.date));
     const sum = rows.reduce((s, [a]) => s + Number(a.amount || 0), 0);
-    html = (rows.length ? `<p class="hint">${rows.length}件　合計 ${yen(sum)}</p>` : '') + table(['日付', '内容', k === 'sns' ? '投稿' : '', '金額', ''], rows.map(([a, i]) =>
+    html = (rows.length ? `<p class="hint">${rows.length}件　合計 ${yen(sum)}</p>` : '') + historyTable(['日付', '内容', k === 'sns' ? '投稿' : '', '金額', ''], rows.map(([a, i]) =>
       `<tr><td>${chk('allow', i)}${md(a.date)}</td><td>${k === 'sns' ? `<span class="badge">${esc(/投稿$/.test(a.snsKind) ? a.snsKind : a.snsKind + '投稿')}</span> ` : ''}${esc(a.content)}</td><td>${k === 'sns' ? link(a.url, '開く') : ''}</td><td class="num">${yen(a.amount)}</td><td><button class="mini" onclick="editAllow(${i})">修正</button>${delBtn('allow', i)}</td></tr>`), '記録はありません');
   } else if (k === 'transport') {
-    html = table(['申請月', '手段', '区間', '合計', '内訳', '状態', ''], HIST.transports.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
+    html = historyTable(['申請月', '手段', '区間', '合計', '内訳', '状態', ''], HIST.transports.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
       `<tr><td>${x.mine ? chk('trans', i) : ''}${mon(x.date)}</td><td>${esc(x.mode)}</td><td>${esc(x.route)}${link(x.url, '領収書')}</td><td class="num">${yen(x.amount)}${x.teiki > 0 ? `<br><span class="hint">領収書${yen(x.receiptAmount)}−定期${yen(x.teiki)}</span>` : ''}${x.settle && !/^本人立替/.test(x.settle) ? `<br><span class="hint">${esc(x.settle)}</span>` : ''}</td>
        <td>${x.split.map(s => esc(s.name) + ' ' + yen(s.amount)).join('<br>')}${x.mine ? '' : `<br><span class="hint">支払：${esc(x.payer)}</span>`}</td><td><span class="badge ${esc(x.status)}">${esc(x.status)}</span></td>
        <td>${x.mine ? `<button class="mini" onclick="editTrans(${i})">修正</button>${delBtn('trans', i)}` : ''}</td></tr>`), '交通費の記録はありません');
   } else {
-    html = table(['申請月', '金額', 'PJ・企画', '予算元', '領収書', '精算', '状態', ''], HIST.expenses.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
+    html = historyTable(['申請月', '金額', 'PJ・企画', '予算元', '領収書', '精算', '状態', ''], HIST.expenses.map((x, i) => [x, i]).filter(([x]) => inMonth(x.date)).map(([x, i]) =>
       `<tr><td>${chk('expense', i)}${mon(x.date)}</td><td class="num">${yen(x.amount)}</td><td>${esc(pjL(x.pj))}</td><td>${esc(x.budget)}</td>
        <td>${link(x.url, '領収書')}${x.receipt && x.receipt !== x.url ? link(x.receipt, 'レシート') : ''}</td><td>${esc(x.settle)}</td><td><span class="badge ${esc(x.status)}">${esc(x.status)}</span></td>
        <td>${canSubmitExpense() ? `<button class="mini" onclick="editExp(${i})">修正</button>` : ''}${delBtn('expense', i)}</td></tr>`), '経費の記録はありません');
   }
-  $('hList').innerHTML = html;
+  return html;
 }
 function delOne(kind, i, ok, ng) {
   const r = google.script.run.withSuccessHandler(ok).withFailureHandler(ng);
