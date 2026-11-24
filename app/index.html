@@ -221,7 +221,7 @@
   </div>
 
   <div id="bgToasts" style="position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:1000;display:flex;flex-direction:column;gap:6px;max-width:560px;margin:0 auto;pointer-events:none"></div>
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.42</span><span id="verWarn"></span></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.43</span><span id="verWarn"></span></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
@@ -487,14 +487,14 @@ function onMember(first) {
   $('eForm').hidden = !canSubmitExpense();
   $('perm').textContent = canSubmitExpense() ? '' : !member()
     ? (ADM() ? '上の「代理で入力するメンバー」を選んでください' : 'メンバーを選択してください')
-    : '立替権限がないため、経費の申請・修正はできません';
+    : '申請するメンバーを選んでください';
   renderMeetings();
   if (!first && $('p-history').classList.contains('on')) loadHistory();
 }
 
 function canSubmitExpense() {
   const name = member();
-  return !!(name && (ADM() || (INIT && INIT.members.some(m => m.name === name && m.advance))));
+  return !!(name && (ADM() || (INIT && INIT.members.some(m => m.name === name))));
 }
 
 /* ---------- 日付の欄（管理者は「月」だけでもよい） ---------- */
@@ -850,7 +850,7 @@ function cancelExpEdit() { resetExpense(); msg('eMsg'); }
 
 async function sendExpense() {
   if (needMember('eMsg')) return;
-  if (!canSubmitExpense()) return msg('eMsg', 'ng', '立替権限がないため、経費の申請・修正はできません');
+  if (!canSubmitExpense()) return msg('eMsg', 'ng', '申請するメンバーを選んでください');
   const errs = [];
   const cards = [...document.querySelectorAll('#eCards .ecard')];
   const list = cards.map((d, i) => {
