@@ -185,7 +185,7 @@
   <!-- 稼働時間 -->
   <div class="pane" id="p-work">
     <div class="edit-banner" id="aEdit">✏️ 活動を修正中です。<button class="mini" onclick="cancelActEdit()">修正をやめる</button></div>
-    <p class="hint">活動日ごとに、その日の活動を何件でも入れられます。<b>「＋ 活動日を追加」で別の日もまとめて申請</b>できます（1日2行を超えると給与タブの行が自動で増えます）。</p>
+    <p class="hint">活動日ごとに、その日の活動を何件でも入れられます。<b>「＋ 活動日を追加」で別の日もまとめて申請</b>できます（1日1行を超えると給与タブの行が自動で増えます）。</p>
     <div id="days"></div>
     <button class="btn sub" id="addDayBtn" onclick="addDay()">＋ 活動日を追加</button>
     <div class="bar"><span class="total" id="total">合計 0分（0時間）</span><button class="btn" id="aSubmit" onclick="sendActivity()">給与タブへ反映</button></div>
@@ -221,7 +221,7 @@
   </div>
 
   <div id="bgToasts" style="position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom, 0px));z-index:1000;display:flex;flex-direction:column;gap:6px;max-width:560px;margin:0 auto;pointer-events:none"></div>
-  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.43</span><span id="verWarn"></span></div>
+  <div id="verFoot" style="text-align:center;color:var(--muted);font-size:12px;margin:28px 0 10px">🍍 パイナップル <span id="verApp">v1.44</span><span id="verWarn"></span></div>
 
 <script>
 /* ---------- パイナップル：ログインと、スプレッドシート（Apps Script）との通信 ---------- */
